@@ -32,8 +32,10 @@ final class DeviceProfilesTest {
         check(offset(damaged, null, null, 0, null, "999999999999999999999999") == 12, "skip damaged entries and tolerate unusual versions");
 
         Context context = test.getTargetContext();
-        boolean custom = MaskMode.hasVerticalOffsetOverride(context);
-        int original = MaskMode.verticalOffset(context);
+        boolean custom = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_offset");
+        int original = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_offset", DeviceProfiles.defaultOffset(context));
+        Integer originalFine = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_fine_px")
+                ? context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_fine_px", 0) : null;
         try {
             MaskMode.setVerticalOffset(context, 57);
             DeviceProfiles.defaultOffset(context);
@@ -46,6 +48,8 @@ final class DeviceProfilesTest {
         } finally {
             if (custom) MaskMode.setVerticalOffset(context, original);
             else MaskMode.resetVerticalOffset(context);
+            if (originalFine == null) context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().remove("vertical_fine_px").apply();
+            else context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().putInt("vertical_fine_px", originalFine).apply();
         }
 
         String[] languages = {"en", "it", "fr", "es", "de", "ja"};

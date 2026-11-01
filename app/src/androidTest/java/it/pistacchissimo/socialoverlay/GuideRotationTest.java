@@ -27,10 +27,14 @@ public final class GuideRotationTest extends Instrumentation {
         WindowManager manager = context.getSystemService(WindowManager.class);
         SafeAreaGuideView[] guide = new SafeAreaGuideView[1];
         int originalMode = MaskMode.get(context);
-        int originalOffset = MaskMode.verticalOffset(context);
-        boolean hadOverride = MaskMode.hasVerticalOffsetOverride(context);
+        int originalOffset = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_offset", DeviceProfiles.defaultOffset(context));
+        Integer originalFine = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_fine_px")
+                ? context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_fine_px", 0) : null;
+        boolean hadOverride = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_offset");
         int originalOpacity = MaskMode.opacity(context);
         android.content.SharedPreferences prefs = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE);
+        boolean hadWizard = prefs.contains("wizard_complete");
+        boolean savedWizard = prefs.getBoolean("wizard_complete", false);
         boolean hadSubtitleOffset = prefs.contains("subtitle_offset");
         int originalSubtitleOffset = MaskMode.subtitleOffset(context);
         boolean autoRotation = Settings.System.getInt(context.getContentResolver(),
@@ -39,6 +43,7 @@ public final class GuideRotationTest extends Instrumentation {
                 Settings.System.USER_ROTATION, 0);
         Bundle result = new Bundle();
         try {
+            prefs.edit().putBoolean("wizard_complete", true).commit();
             startActivitySync(new Intent(context, MainActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             rotate(manager, 0);
@@ -89,6 +94,10 @@ public final class GuideRotationTest extends Instrumentation {
         } catch (Throwable error) {
             result.putString("stream", "FAIL: " + error + "\n");
         } finally {
+            android.content.SharedPreferences.Editor restoreWizard = prefs.edit();
+            if (hadWizard) restoreWizard.putBoolean("wizard_complete", savedWizard);
+            else restoreWizard.remove("wizard_complete");
+            restoreWizard.commit();
             getUiAutomation().setRotation(0);
             runOnMainSync(() -> {
                 if (guide[0] != null && guide[0].isAttachedToWindow()) manager.removeViewImmediate(guide[0]);
@@ -96,6 +105,8 @@ public final class GuideRotationTest extends Instrumentation {
                 MaskMode.setOpacity(context, originalOpacity);
                 if (hadOverride) MaskMode.setVerticalOffset(context, originalOffset);
                 else MaskMode.resetVerticalOffset(context);
+                if (originalFine == null) context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().remove("vertical_fine_px").apply();
+                else context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().putInt("vertical_fine_px", originalFine).apply();
                 if (hadSubtitleOffset) MaskMode.setSubtitleOffset(context, originalSubtitleOffset);
                 else MaskMode.resetSubtitleOffset(context);
             });

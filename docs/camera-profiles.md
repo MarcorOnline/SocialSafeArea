@@ -45,8 +45,8 @@ This initial entry was tested on **Samsung Galaxy S26 Ultra, Android 17 / API 37
 
 Thus camera differences are relaxed before Android differences, and Android
 differences before changing model within a brand. The reference profile still
-applies to hypothetical Camera `17.1.00.43`. A Realme with no Realme entries
-receives the first valid baseline, allowing the user to adjust it.
+applies to hypothetical Camera `17.1.00.43`. A device whose manufacturer has no
+entries receives the first valid baseline, allowing the user to adjust it.
 
 Invalid entries are skipped. Missing metadata and empty/unreadable profile data
 are handled without stopping the guide; the ultimate fallback is 0 dp. No

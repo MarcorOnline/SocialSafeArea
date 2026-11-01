@@ -6,9 +6,9 @@
 
 Una maschera leggera per Android che ti aiuta a tenere volti, scritte e dettagli importanti lontani dagli elementi dell’interfaccia di Instagram Reels e TikTok.
 
-**Google Play: v1.4.1 · APK GitHub: v1.4.0 · Android 8.0+ (API 26) · GPL-3.0-only**
+**v1.5.0 · Google Play e APK GitHub · Android 8.0+ (API 26) · GPL-3.0-only**
 
-La versione **1.4.1** è disponibile su Google Play: target API 36, link alla privacy e consenso esplicito per il rilevamento fotocamera facoltativo. Vedi [dettagli della build e verifiche per Play](docs/google-play.md).
+La versione **1.5.0** aggiunge configurazione guidata, calibrazione direttamente sulla fotocamera e frecce per regolare l’altezza. Gli aggiornamenti su Google Play diventano disponibili dopo la revisione di Google. Vedi [note della versione](docs/releases/v1.5.0.md) e [dettagli della build e verifiche per Play](docs/google-play.md).
 
 Sul telefono l’app si chiama **Safe Area** e su Google Play **Safe Area: Reels & TikTok**.
 
@@ -45,11 +45,21 @@ Installa l’app con il pulsante **Disponibile su Google Play** qui sopra, poi a
 
 ### Consenti la visualizzazione sopra la fotocamera
 
-Apri **Safe Area** e tocca **Mostra bottone rapido**. Nella pagina dei permessi di Android, seleziona Safe Area e attiva **Mostra sopra altre app** / **Comparsa in primo piano**, poi torna all’app. Su Samsung lo stesso interruttore si trova in **Impostazioni → Applicazioni → Accesso speciale → Comparsa in primo piano**; i nomi possono variare in base alla versione di Android. Le versioni pubblicate prima della v1.1.0 si chiamano Social Safe Area.
+Al primo avvio si apre una **Configurazione guidata** a schermate dedicate. La schermata principale resta nascosta fino alla fine:
 
-Questo permesso serve per disegnare sopra la fotocamera. L’accessibilità è un permesso separato e facoltativo.
+1. Consenti a SAFE di comparire sopra le altre app. Il wizard spiega i passaggi prima di aprire Android e non permette di proseguire senza il permesso effettivo.
+2. Prova il vero bottone SAFE: un tocco mostra la maschera, il secondo la nasconde. **Continua** si abilita solo dopo entrambi i gesti. La prova non cambia le maschere, la posizione del bottone o lo stato ON/OFF salvati.
+3. **Calibra ora** apre la lista delle app: scegli la fotocamera, passa a Video verticale 9:16 e regola la maschera visibile con ↑ e ↓. Ogni tocco la sposta di 1 dp, come il cursore; tieni premuto per continuare. Il bottone **Fatto**, di un verde più intenso, salva la posizione e torna al passo 4. **Salta** prosegue senza calibrare. Dopo Fatto, le frecce restano nascoste finché non le attivi da **Personalizza maschera**; il pulsante **Regolazione guidata sulla fotocamera** ripropone lo stesso flusso. Fatto compare solo durante la calibrazione guidata. SAFE e le frecce restano sulla destra; Fatto compare alla loro sinistra.
+4. Scegli la fotocamera, oppure scegli l’uso manuale.
+5. Se vuoi, attiva il rilevamento della fotocamera tramite l’accessibilità Android. Informativa, istruzioni e aiuto per le impostazioni con limitazioni precedono le impostazioni di sistema. Puoi scegliere **Non ora**.
+6. Valuta il rilevamento sperimentale Foto/Video. Si può attivare solo con fotocamera scelta, rilevamento attivo e profilo esatto compatibile; altrimenti viene spiegato come usare SAFE manualmente.
+7. Leggi il riepilogo delle funzioni effettivamente attive ed entra nell’app.
 
-Le impostazioni sono raccolte in tre sezioni, **Personalizza maschera**, **Apertura automatica** e **Funzioni sperimentali**, inizialmente chiuse: aprendo una sezione si chiude la precedente. **Mostra bottone rapido** resta sempre disponibile in alto.
+Se torni senza aver concesso un permesso, il wizard lo segnala senza considerarlo attivo. Riprende dal punto raggiunto anche dopo una chiusura, inclusa la prova a metà. Se viene revocato il permesso di sovrapposizione prima della fine, torna al primo passo. Puoi uscire senza concederlo; non puoi completare la configurazione senza di esso. Il pulsante **Configurazione guidata** nella home permette di rifarla. Anche chi aveva visto la precedente guida integrata passa dal nuovo wizard una volta.
+
+Su Samsung il permesso di sovrapposizione può chiamarsi **Comparsa in primo piano** e trovarsi in **Impostazioni → Applicazioni → Accesso speciale**. I nomi variano tra telefoni. L’accessibilità è un permesso distinto e facoltativo.
+
+Dopo la configurazione, le impostazioni sono raccolte in **Personalizza maschera**, **Apertura automatica** e **Funzioni sperimentali**, inizialmente chiuse: aprendo una sezione si chiude la precedente.
 
 1. Apri **Personalizza maschera** e attiva o disattiva a piacere i checkbox **Reel**, **TikTok** e **Sottotitoli**.
 2. Se necessario, regola **Opacità maschera** e **Posizione verticale generale**. Il relativo **Reset** ripristina l’allineamento predefinito del profilo rilevato. **Posizione verticale sottotitoli** sposta solo il box rispetto alla posizione generale; il suo **Reset** azzera lo scostamento aggiuntivo. Il cursore sottotitoli e il suo Reset sono disabilitati quando **Sottotitoli** non è selezionato, conservando la posizione salvata per la prossima attivazione.
@@ -57,16 +67,16 @@ Le impostazioni sono raccolte in tre sezioni, **Personalizza maschera**, **Apert
 4. Usa il bottone flottante `SAFE / ON/OFF` per accendere o spegnere la maschera. Solo questo bottone cambia tale stato.
 5. Trascina il bottone rapido per spostarlo. Per chiudere la maschera e il bottone, trascinalo sul cestino che compare in basso.
 
-Aprire Safe Area ripristina anche il bottone rapido se il permesso di sovrapposizione è già concesso. La maschera scelta, l’opacità, l’allineamento verticale, la posizione del bottone e lo stato ON/OFF vengono salvati sul dispositivo.
+Alla fine del wizard il bottone si avvia con **Mostra bottone rapido**. Alle aperture successive, Safe Area lo ripristina se il permesso di sovrapposizione è concesso. La maschera scelta, l’opacità, l’allineamento verticale, la posizione del bottone e lo stato ON/OFF vengono salvati sul dispositivo.
 
 ### Segui automaticamente l’app fotocamera
 
 1. Apri **Apertura automatica** e, in **Apri il bottone rapido quando apro**, seleziona la tua app fotocamera.
-2. Tocca **Abilita rilevamento fotocamera**, leggi l'informativa e scegli **Continua nelle impostazioni Android** solo se vuoi usare questa funzione facoltativa. **Annulla** mantiene il controllo manuale senza aprire le impostazioni.
+2. Tocca **Abilita rilevamento fotocamera**. Se non hai ancora scelto un’app, Safe Area te la fa scegliere. Leggi i passaggi e l’informativa, poi scegli **Continua nelle impostazioni Android** solo se vuoi usare questa funzione facoltativa. **Annulla** mantiene il controllo manuale senza aprire le impostazioni.
 3. Cerca **Rilevamento app Safe Area** tra le app o i servizi installati/scaricati, attivalo e conferma la richiesta di Android.
 4. Torna in Safe Area, poi apri la fotocamera selezionata.
 
-Se Android blocca l’accessibilità per un’app installata tramite APK, potrebbe essere necessario abilitare **Informazioni app → ⋮ → Consenti impostazioni con limitazioni**. Fallo solo per una versione di cui ti fidi; consulta la [spiegazione di Android sulle impostazioni con limitazioni](https://support.google.com/android/answer/12623953). I nomi dei menu dipendono dal sistema e dal produttore.
+Se Android blocca l’accessibilità per un’app installata tramite APK, tocca **Attivazione bloccata?** nel wizard o in **Apertura automatica**: trovi la spiegazione prima del pulsante per aprire le informazioni app. Potrebbe essere necessario abilitare **Informazioni app → ⋮ → Consenti impostazioni con limitazioni**. Fallo solo per una versione di cui ti fidi; consulta la [spiegazione di Android sulle impostazioni con limitazioni](https://support.google.com/android/answer/12623953). I nomi dei menu dipendono dal sistema e dal produttore.
 
 Aprire l’app selezionata mostra il bottone rapido e ripristina lo stato salvato della maschera. Passare a un’altra app o alla Home nasconde sia il bottone sia la maschera. Tornare all’app selezionata li ripristina senza cambiare ON/OFF.
 
@@ -78,7 +88,8 @@ Il rilevamento usa gli eventi di cambio finestra a schermo intero. Popup e panne
 
 In **Funzioni sperimentali** puoi attivare **Mostra la maschera solo in modalità "Video"**,
 spenta di default. Il pulsante **?** spiega funzionamento, accesso ai comandi e
-limiti prima dell’attivazione. Richiede il rilevamento fotocamera e un profilo
+limiti prima dell’attivazione. Se manca un requisito, l’opzione resta spenta e
+Safe Area apre il passaggio da completare. Richiede il rilevamento fotocamera e un profilo
 esatto compatibile: quello iniziale supporta Samsung Camera in italiano, inglese,
 francese, spagnolo e tedesco, in verticale, sul dispositivo e sulla versione
 indicati nei profili.
@@ -111,7 +122,7 @@ La maschera è un aiuto alla composizione basato su un riferimento fisso, non un
 
 Il contributo più utile della community è un **offset verticale corretto per le app fotocamera più diffuse**, verificato su un dispositivo reale.
 
-I profili si trovano in un unico piccolo file: [`camera-profiles.json`](app/src/main/assets/camera-profiles.json). Ogni voce riporta produttore, modello, API Android, pacchetto/versione della fotocamera e offset in dp. Regola la maschera con il cursore, poi apri **ⓘ → Copia JSON della calibrazione** e invia la voce con una pull request verso **`develop`**.
+I profili si trovano in un unico piccolo file: [`camera-profiles.json`](app/src/main/assets/camera-profiles.json). Ogni voce riporta produttore, modello, API Android, pacchetto/versione della fotocamera e offset in dp. Regola la maschera con le frecce o il cursore, poi apri **ⓘ → Copia JSON della calibrazione** e invia la voce con una pull request verso **`develop`**.
 
 All’avvio l’app rileva dispositivo, sistema operativo e fotocamera selezionata (o quella predefinita per i video). Suggerisce il profilo utilizzabile più vicino: prima lo stesso modello, poi l’API Android più vicina, infine app e versione della fotocamera. Se il modello è sconosciuto, cerca tra i dispositivi dello stesso produttore; per un produttore sconosciuto usa come predefinito il **primo profilo valido**. A parità di punteggio viene mantenuto l’ordine del file.
 

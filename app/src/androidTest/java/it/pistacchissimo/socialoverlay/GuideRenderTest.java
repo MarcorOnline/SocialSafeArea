@@ -29,12 +29,17 @@ public final class GuideRenderTest extends Instrumentation {
         SafeAreaGuideView[] guide = new SafeAreaGuideView[1];
         int originalMode = MaskMode.get(context);
         int originalOpacity = MaskMode.opacity(context);
-        int originalOffset = MaskMode.verticalOffset(context);
-        boolean hadOverride = MaskMode.hasVerticalOffsetOverride(context);
+        int originalOffset = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_offset", DeviceProfiles.defaultOffset(context));
+        Integer originalFine = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_fine_px")
+                ? context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_fine_px", 0) : null;
+        boolean hadOverride = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_offset");
         android.content.SharedPreferences prefs = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE);
+        boolean hadWizard = prefs.contains("wizard_complete");
+        boolean savedWizard = prefs.getBoolean("wizard_complete", false);
         boolean hadSubtitleOffset = prefs.contains("subtitle_offset");
         int originalSubtitleOffset = MaskMode.subtitleOffset(context);
         try {
+            prefs.edit().putBoolean("wizard_complete", true).commit();
             DeviceProfilesTest.verify(this);
             MaskSelectionTest.verify(this);
             QuickButtonTest.verify(this);
@@ -154,6 +159,10 @@ public final class GuideRenderTest extends Instrumentation {
         } catch (Throwable error) {
             result.putString("stream", "FAIL: " + error + "\n");
         } finally {
+            android.content.SharedPreferences.Editor restoreWizard = prefs.edit();
+            if (hadWizard) restoreWizard.putBoolean("wizard_complete", savedWizard);
+            else restoreWizard.remove("wizard_complete");
+            restoreWizard.commit();
             runOnMainSync(() -> {
                 if (guide[0] != null && guide[0].isAttachedToWindow()) {
                     manager.removeViewImmediate(guide[0]);
@@ -162,6 +171,8 @@ public final class GuideRenderTest extends Instrumentation {
                 MaskMode.setOpacity(context, originalOpacity);
                 if (hadOverride) MaskMode.setVerticalOffset(context, originalOffset);
                 else MaskMode.resetVerticalOffset(context);
+                if (originalFine == null) context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().remove("vertical_fine_px").apply();
+                else context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().putInt("vertical_fine_px", originalFine).apply();
                 if (hadSubtitleOffset) MaskMode.setSubtitleOffset(context, originalSubtitleOffset);
                 else MaskMode.resetSubtitleOffset(context);
             });

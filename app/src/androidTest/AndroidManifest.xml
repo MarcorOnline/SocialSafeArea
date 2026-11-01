@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <instrumentation
+        android:name="it.pistacchissimo.socialoverlay.ArrowControlsTest"
+        android:targetPackage="it.pistacchissimo.socialoverlay" />
+    <instrumentation
         android:name="it.pistacchissimo.socialoverlay.GuideRenderTest"
         android:targetPackage="it.pistacchissimo.socialoverlay" />
     <instrumentation

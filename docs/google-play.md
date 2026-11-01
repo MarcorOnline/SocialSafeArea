@@ -1,6 +1,6 @@
 # Google Play preparation
 
-Version **1.4.1** (version code **11**) is available on [Google Play](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay). This document describes the Play build, signing requirements and verification steps.
+Version **1.5.0** (version code **12**) updates the existing [Google Play app](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay). Store availability depends on Google's review and rollout; Play Console is the source for the current submission status. This document describes the Play build, signing requirements and verification steps.
 
 ## Android requirements
 
@@ -10,7 +10,7 @@ Version **1.4.1** (version code **11**) is available on [Google Play](https://pl
 
 The `play` build type is intended for Google Play: it disables the automatic GitHub update check and removes the Internet permission. Updates are handled by Google Play. External links still open in the user's browser on an explicit tap. The standard `release` and `debug` builds retain the existing GitHub update check. This distinction avoids unnecessary network traffic and data-disclosure ambiguity in the Play build without changing APK distribution behavior.
 
-[Google Play's target API requirement](https://support.google.com/googleplay/android-developer/answer/11926878) and [the minimum AGP versions](https://developer.android.com/build/releases/about-agp) were checked on 2026-10-26.
+[Google Play's target API requirement](https://support.google.com/googleplay/android-developer/answer/11926878) was checked on 2026-11-01: app updates must target API 36 or higher. This build targets API 36. The build-tool setup was checked against [the minimum AGP versions](https://developer.android.com/build/releases/about-agp) on 2026-10-26.
 
 ## Privacy and optional accessibility
 
@@ -22,7 +22,7 @@ Before opening Android accessibility settings, the app explains which window and
 
 The accessibility service ignores events and does not retrieve camera nodes until the in-app consent has been recorded. This also applies to users upgrading with the OS service already enabled: open Automatic opening and use Enable camera detection to review and accept the disclosure again. Experimental Photo/Video detection still requires its separate opt-in.
 
-The Play accessibility declaration and foreground-service declaration need to accurately describe this behavior. Google may require demonstration videos and review. Do not claim this is an accessibility tool intended for users with disabilities.
+The Play accessibility declaration and foreground-service declaration describe this behavior. Guided setup now explains prerequisites before opening system settings, verifies the actual grants, and lets users skip optional accessibility and Photo/Video detection. Calibration itself only needs the existing overlay permission; it does not access camera images or record video. Google may require demonstration videos and review. Do not claim this is an accessibility tool intended for users with disabilities.
 
 The standard APK's GitHub update check makes an HTTPS request; its privacy policy explains the connection metadata. Only the `play` build omits that check and Internet permission. Complete Play Data safety against the actual uploaded artifact; absence of analytics alone is not sufficient reason to assert that no data is collected.
 

@@ -25,8 +25,10 @@ final class MaskSelectionTest {
         String legacy = prefs.getString("mask_mode", "both");
         boolean hadSubtitleOffset = prefs.contains("subtitle_offset");
         int originalSubtitleOffset = MaskMode.subtitleOffset(context);
-        boolean hadGeneralOffset = MaskMode.hasVerticalOffsetOverride(context);
-        int originalGeneralOffset = MaskMode.verticalOffset(context);
+        boolean hadGeneralOffset = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_offset");
+        int originalGeneralOffset = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_offset", DeviceProfiles.defaultOffset(context));
+        Integer originalFine = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_fine_px")
+                ? context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_fine_px", 0) : null;
         MainActivity[] activity = new MainActivity[1];
         try {
             MaskMode.resetSubtitleOffset(context);
@@ -108,6 +110,8 @@ final class MaskSelectionTest {
             else restore.remove("subtitle_offset");
             if (hadGeneralOffset) restore.putInt("vertical_offset", originalGeneralOffset);
             else restore.remove("vertical_offset");
+            if (originalFine != null) restore.putInt("vertical_fine_px", originalFine);
+            else restore.remove("vertical_fine_px");
             restore.commit();
         }
     }
@@ -120,6 +124,7 @@ final class MaskSelectionTest {
             java.util.ArrayList<View> headers = new java.util.ArrayList<>();
             activity.getWindow().getDecorView().findViewsWithText(headers,
                     context.getString(R.string.customize_mask), View.FIND_VIEWS_WITH_TEXT);
+            headers.removeIf(view -> !(view instanceof android.widget.Button));
             check(headers.size() == 1, "customize accordion header available");
             headers.get(0).performClick();
         });

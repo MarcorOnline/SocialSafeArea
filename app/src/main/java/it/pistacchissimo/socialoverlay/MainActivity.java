@@ -5,6 +5,7 @@ package it.pistacchissimo.socialoverlay;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.ComponentName;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -12,6 +13,10 @@ import android.content.pm.ResolveInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.graphics.Paint;
 import android.text.SpannableString;
@@ -21,6 +26,7 @@ import android.text.style.ClickableSpan;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -46,6 +52,8 @@ public final class MainActivity extends Activity {
     private TextView modeStatus;
     private TextView opacityStatus;
     private TextView positionStatus;
+    private SeekBar verticalPosition;
+    private CheckBox adjustmentArrows;
     private TextView subtitlePositionStatus;
     private SeekBar subtitlePosition;
     private Button resetSubtitlePosition;
@@ -54,19 +62,84 @@ public final class MainActivity extends Activity {
     private Button expandedHeader;
     private LinearLayout expandedSection;
     private TextView experimentalStatus;
+    private TextView setupStatus;
+    private Button detectionButton;
+    private Spinner appPicker;
+    private List<TargetApp> apps;
+    private boolean showAfterPermission;
+    private boolean inSetup;
+    private int setupPage;
+    private int demoPhase;
+    private TextView demoInstructions;
+    private TextView demoStatus;
+    private Button demoNext;
+    private final ResultReceiver tutorialResult = new ResultReceiver(new Handler(Looper.getMainLooper())) {
+        @Override protected void onReceiveResult(int visible, Bundle data) {
+            if (!inSetup || setupPage != 1 || demoPhase >= 2) return;
+            if ((visible == 1) == (demoPhase == 0)) {
+                demoPhase++;
+                getSharedPreferences("social_overlay", MODE_PRIVATE).edit()
+                        .putInt("wizard_demo", demoPhase).apply();
+                updateDemo();
+            }
+        }
+    };
     private final Consumer<UpdateChecker.Release> updateResult = this::showUpdate;
 
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        showAfterPermission = state != null && state.getBoolean("show_after_permission", false);
         DeviceProfiles.defaultOffset(this);
-        setContentView(createContent());
-        if (Settings.canDrawOverlays(this)) OverlayService.start(this);
+        android.content.SharedPreferences prefs = getSharedPreferences("social_overlay", MODE_PRIVATE);
+        inSetup = !prefs.getBoolean("wizard_complete", false);
+        setupPage = Math.max(0, Math.min(6, prefs.getInt("wizard_page", 0)));
+        demoPhase = Math.max(0, Math.min(2, prefs.getInt("wizard_demo", 0)));
+        if (inSetup) {
+            stopService(new Intent(this, OverlayService.class));
+            if (!Settings.canDrawOverlays(this)) setupPage = 0;
+            renderSetup();
+        } else {
+            setContentView(createContent());
+            if (Settings.canDrawOverlays(this) && !prefs.getBoolean("calibration_active", false)
+                    && !prefs.getBoolean("calibration_finished", false)) OverlayService.start(this);
+        }
+    }
+
+    @Override protected void onPause() {
+        if (inSetup && setupPage == 1) stopService(new Intent(this, OverlayService.class));
+        super.onPause();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putBoolean("show_after_permission", showAfterPermission);
+        super.onSaveInstanceState(state);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        android.content.SharedPreferences prefs = getSharedPreferences("social_overlay", MODE_PRIVATE);
+        if (prefs.getBoolean("calibration_active", false) || prefs.getBoolean("calibration_finished", false)) {
+            boolean finished = prefs.getBoolean("calibration_finished", false);
+            boolean fromWizard = prefs.getBoolean("calibration_from_wizard", false);
+            stopService(new Intent(this, OverlayService.class));
+            prefs.edit().remove("calibration_active").remove("calibration_finished")
+                    .remove("calibration_from_wizard").apply();
+            if (finished && fromWizard && inSetup) {
+                goToSetupPage(3);
+                return;
+            }
+        }
+        if (inSetup) {
+            if (!Settings.canDrawOverlays(this) && setupPage > 0) goToSetupPage(0);
+            else renderSetup();
+            if (setupPage == 1 && Settings.canDrawOverlays(this)) {
+                OverlayService.startTutorial(this, demoPhase == 1, tutorialResult);
+            }
+            return;
+        }
         refresh();
         if (getResources().getBoolean(R.bool.check_github_updates)) {
             UpdateChecker.check(this, updateResult);
@@ -76,9 +149,19 @@ public final class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == OVERLAY_PERMISSION_REQUEST && Settings.canDrawOverlays(this)) {
-            OverlayService.start(this);
+        if (requestCode == OVERLAY_PERMISSION_REQUEST) {
+            if (Settings.canDrawOverlays(this)) {
+                if (inSetup) {
+                    goToSetupPage(1);
+                    return;
+                }
+                if (showAfterPermission) OverlayService.start(this);
+            } else if (!inSetup) {
+                Toast.makeText(this, R.string.setup_overlay_denied, Toast.LENGTH_LONG).show();
+            }
+            showAfterPermission = false;
         }
+        refresh();
     }
 
     private View createContent() {
@@ -112,6 +195,9 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams descriptionParams = new LinearLayout.LayoutParams(-1, -2);
         descriptionParams.topMargin = dp(18);
         content.addView(description, descriptionParams);
+
+        setupStatus = sectionLabel(content, "");
+        setupStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
 
         showButton = new Button(this, null, 0, R.style.SafeAreaButton_Primary);
         showButton.setAllCaps(false);
@@ -157,15 +243,17 @@ public final class MainActivity extends Activity {
         maskSettings.addView(opacity, new LinearLayout.LayoutParams(-1, -2));
 
         positionStatus = sectionLabel(maskSettings, getString(R.string.vertical_label));
-        SeekBar verticalPosition = new SeekBar(this);
+        verticalPosition = new SeekBar(this);
         verticalPosition.setMax(720);
         verticalPosition.setProgress(MaskMode.verticalOffset(this) + 360);
         verticalPosition.setContentDescription(getString(R.string.vertical_picker_description));
         verticalPosition.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                if (fromUser) MaskMode.setVerticalOffset(MainActivity.this, progress - 360);
-                OverlayService.refreshMask(MainActivity.this);
-                refresh();
+                if (fromUser) {
+                    MaskMode.setVerticalOffset(MainActivity.this, progress - 360);
+                    OverlayService.refreshMask(MainActivity.this);
+                    refresh();
+                }
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
             @Override public void onStopTrackingTouch(SeekBar bar) { }
@@ -188,6 +276,19 @@ public final class MainActivity extends Activity {
         });
         positionControls.addView(resetPosition, new LinearLayout.LayoutParams(-2, -2));
         maskSettings.addView(positionControls, new LinearLayout.LayoutParams(-1, -2));
+        setupButton(maskSettings, this::chooseCalibrationCamera).setText(R.string.calibration_open);
+
+        adjustmentArrows = new CheckBox(this);
+        adjustmentArrows.setText(R.string.adjustment_arrows);
+        adjustmentArrows.setTextColor(getColor(R.color.on_surface));
+        adjustmentArrows.setMinHeight(dp(48));
+        adjustmentArrows.setChecked(MaskMode.adjustmentArrows(this));
+        adjustmentArrows.setOnClickListener(ignored -> {
+            MaskMode.setAdjustmentArrows(this, adjustmentArrows.isChecked());
+            OverlayService.refreshMask(this);
+        });
+        maskSettings.addView(adjustmentArrows, new LinearLayout.LayoutParams(-1, -2));
+        sectionLabel(maskSettings, getString(R.string.adjustment_arrows_hint));
 
         subtitlePositionStatus = sectionLabel(maskSettings, getString(R.string.subtitle_vertical_label));
         subtitlePosition = new SeekBar(this);
@@ -223,9 +324,10 @@ public final class MainActivity extends Activity {
         maskSettings.addView(subtitleControls, new LinearLayout.LayoutParams(-1, -2));
 
         LinearLayout autoSettings = addAccordion(content, R.string.automatic_opening);
+        sectionLabel(autoSettings, getString(R.string.setup_camera_help));
         autoStatus = sectionLabel(autoSettings, getString(R.string.auto_label));
-        Spinner appPicker = new Spinner(this);
-        List<TargetApp> apps = launchableApps();
+        appPicker = new Spinner(this);
+        apps = launchableApps();
         ArrayAdapter<TargetApp> appAdapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_dropdown_item, apps);
         appPicker.setAdapter(appAdapter);
@@ -242,13 +344,14 @@ public final class MainActivity extends Activity {
         });
         autoSettings.addView(appPicker, new LinearLayout.LayoutParams(-1, -2));
 
-        Button accessibility = new Button(this, null, 0, R.style.SafeAreaButton);
-        accessibility.setAllCaps(false);
-        accessibility.setText(R.string.enable_detection);
-        accessibility.setOnClickListener(ignored -> openAccessibilitySettings());
+        detectionButton = new Button(this, null, 0, R.style.SafeAreaButton);
+        detectionButton.setAllCaps(false);
+        detectionButton.setText(R.string.enable_detection);
+        detectionButton.setOnClickListener(ignored -> enableDetection());
         LinearLayout.LayoutParams accessibilityParams = new LinearLayout.LayoutParams(-1, -2);
         accessibilityParams.topMargin = dp(16);
-        autoSettings.addView(accessibility, accessibilityParams);
+        autoSettings.addView(detectionButton, accessibilityParams);
+        setupButton(autoSettings, this::showRestrictedSettingsHelp).setText(R.string.setup_blocked_title);
 
         LinearLayout experimental = addAccordion(content, R.string.experimental_features);
         LinearLayout videoOnlyRow = new LinearLayout(this);
@@ -264,7 +367,13 @@ public final class MainActivity extends Activity {
                 OverlayService.refreshMask(this);
                 refresh();
             } else if (!MaskMode.videoOnly(this)) {
-                showVideoModeInfo(videoOnly);
+                // Leave the option off until its requirements and disclosure are satisfied.
+                videoOnly.setChecked(false);
+                if (!Settings.canDrawOverlays(this)) explainOverlayPermission();
+                else if (MaskMode.autoPackage(this).isEmpty()) chooseCamera(false);
+                else if (!isWatcherEnabled()) openAccessibilitySettings();
+                else if (DeviceProfiles.modeDetection(this) == null) showVideoModeInfo(null);
+                else showVideoModeInfo(() -> videoOnly.setChecked(true));
             }
         });
         videoOnlyRow.addView(videoOnly, new LinearLayout.LayoutParams(0, -2, 1f));
@@ -276,6 +385,14 @@ public final class MainActivity extends Activity {
         experimental.addView(videoOnlyRow, new LinearLayout.LayoutParams(-1, -2));
         experimentalStatus = sectionLabel(experimental, "");
         experimentalStatus.setMinHeight(dp(48));
+
+        setupButton(content, () -> {
+            inSetup = true;
+            demoPhase = 0;
+            getSharedPreferences("social_overlay", MODE_PRIVATE).edit()
+                    .putBoolean("wizard_complete", false).putInt("wizard_demo", 0).apply();
+            goToSetupPage(0);
+        }).setText(R.string.wizard_reopen);
 
         Button information = new Button(this, null, 0, R.style.SafeAreaButton_Text);
         information.setText("ⓘ");
@@ -293,18 +410,318 @@ public final class MainActivity extends Activity {
         return scroll;
     }
 
+    private void goToSetupPage(int page) {
+        stopService(new Intent(this, OverlayService.class));
+        setupPage = page;
+        if (!Settings.canDrawOverlays(this)) setupPage = 0;
+        getSharedPreferences("social_overlay", MODE_PRIVATE).edit().putInt("wizard_page", setupPage).apply();
+        renderSetup();
+        if (setupPage == 1) OverlayService.startTutorial(this, demoPhase == 1, tutorialResult);
+    }
+
+    @Override public void onBackPressed() {
+        if (inSetup && setupPage > 0) goToSetupPage(setupPage - 1);
+        else super.onBackPressed();
+    }
+
+    private boolean cameraAvailable() {
+        return targetSelection(launchableApps(), MaskMode.autoPackage(this)) > 0;
+    }
+
+    private void finishSetup() {
+        if (!Settings.canDrawOverlays(this)) { goToSetupPage(0); return; }
+        if (demoPhase < 2) { goToSetupPage(1); return; }
+        stopService(new Intent(this, OverlayService.class));
+        getSharedPreferences("social_overlay", MODE_PRIVATE).edit()
+                .putBoolean("wizard_complete", true).remove("wizard_page").remove("wizard_demo").apply();
+        inSetup = false;
+        expandedHeader = null;
+        expandedSection = null;
+        setContentView(createContent());
+        refresh();
+    }
+
+    private void renderSetup() {
+        if (!Settings.canDrawOverlays(this) && setupPage != 0) {
+            setupPage = 0;
+            stopService(new Intent(this, OverlayService.class));
+            getSharedPreferences("social_overlay", MODE_PRIVATE).edit().putInt("wizard_page", 0).apply();
+        }
+        LinearLayout window = new LinearLayout(this);
+        window.setFitsSystemWindows(true);
+        window.setBackgroundColor(getColor(R.color.surface));
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(24), dp(24), dp(24), dp(16));
+        window.addView(root, new LinearLayout.LayoutParams(-1, -1));
+
+        LinearLayout navigation = new LinearLayout(this);
+        navigation.setGravity(Gravity.CENTER_VERTICAL);
+        navigation.setMinimumHeight(dp(48));
+        root.addView(navigation, new LinearLayout.LayoutParams(-1, -2));
+        TextView progress = wizardText(navigation, getString(R.string.wizard_progress, setupPage + 1, 7), 14);
+        progress.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        progress.setTextColor(getColor(R.color.brand));
+        if (setupPage > 0) {
+            Button back = wizardAction(navigation, R.string.wizard_back, false, () -> goToSetupPage(setupPage - 1));
+            back.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+        }
+        android.widget.ProgressBar bar = new android.widget.ProgressBar(this, null,
+                android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(7);
+        bar.setProgress(setupPage + 1);
+        bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(-1, dp(4));
+        barParams.topMargin = dp(12);
+        barParams.bottomMargin = dp(16);
+        root.addView(bar, barParams);
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(0, 0, 0, dp(24));
+        scroll.addView(body);
+        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        int[] titles = {R.string.wizard_overlay_title, R.string.wizard_demo_title,
+                R.string.wizard_height_title, R.string.wizard_camera_title,
+                R.string.wizard_detection_title, R.string.wizard_mode_title, R.string.wizard_done_title};
+        TextView title = wizardText(body, getString(titles[setupPage]), 28);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        if (Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.VERTICAL);
+        root.addView(actions, new LinearLayout.LayoutParams(-1, -2));
+        boolean camera = cameraAvailable();
+        boolean detection = isWatcherEnabled();
+        switch (setupPage) {
+            case 0:
+                wizardParagraph(body, getString(R.string.wizard_overlay_body));
+                boolean allowed = Settings.canDrawOverlays(this);
+                if (!allowed) wizardParagraph(body, getString(R.string.wizard_overlay_steps, getString(R.string.app_name)));
+                wizardStatus(body, getString(allowed ? R.string.wizard_permission_ready : R.string.wizard_permission_waiting));
+                wizardAction(actions, allowed ? R.string.wizard_next : R.string.setup_open_settings,
+                        true, () -> {
+                            if (Settings.canDrawOverlays(this)) goToSetupPage(1);
+                            else launchOverlaySettings();
+                        });
+                break;
+            case 1:
+                demoInstructions = wizardParagraph(body, "");
+                demoStatus = wizardStatus(body, "");
+                demoNext = wizardAction(actions, R.string.wizard_next, true, () -> {
+                    if (demoPhase == 2) goToSetupPage(2);
+                });
+                updateDemo();
+                wizardAction(actions, R.string.wizard_demo_restart, false, () -> {
+                    demoPhase = 0;
+                    getSharedPreferences("social_overlay", MODE_PRIVATE).edit().putInt("wizard_demo", 0).apply();
+                    goToSetupPage(1);
+                });
+                break;
+            case 2:
+                TextView arrows = wizardText(body, "↕", 64);
+                arrows.setTextColor(getColor(R.color.brand));
+                arrows.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                wizardParagraph(body, getString(R.string.wizard_height_body));
+                wizardAction(actions, R.string.calibration_now, true, this::chooseCalibrationCamera);
+                wizardAction(actions, R.string.calibration_skip, false, () -> goToSetupPage(3));
+                break;
+            case 3:
+                wizardParagraph(body, getString(R.string.wizard_camera_body));
+                if (camera) wizardStatus(body, getString(R.string.wizard_camera_selected, appLabel(MaskMode.autoPackage(this))));
+                wizardAction(actions, camera ? R.string.wizard_next : R.string.wizard_choose_camera,
+                        true, () -> { if (cameraAvailable()) goToSetupPage(4); else chooseCamera(false); });
+                if (camera) wizardAction(body, R.string.wizard_change_camera, false, () -> chooseCamera(false));
+                wizardAction(actions, R.string.wizard_manual, false, () -> {
+                    MaskMode.setAutoPackage(this, "");
+                    MaskMode.setVideoOnly(this, false);
+                    goToSetupPage(5);
+                });
+                break;
+            case 4:
+                wizardParagraph(body, getString(R.string.wizard_detection_body, getString(R.string.watcher_name)));
+                wizardStatus(body, getString(detection && camera ? R.string.wizard_detection_ready : R.string.wizard_detection_waiting));
+                wizardAction(actions, detection && camera ? R.string.wizard_next : R.string.enable_detection,
+                        true, () -> {
+                            if (!cameraAvailable()) goToSetupPage(3);
+                            else if (isWatcherEnabled()) goToSetupPage(5);
+                            else openAccessibilitySettings();
+                        });
+                if (!detection) {
+                    wizardAction(actions, R.string.wizard_not_now, false, () -> goToSetupPage(5));
+                    wizardAction(body, R.string.setup_blocked_title, false, this::showRestrictedSettingsHelp);
+                }
+                break;
+            case 5:
+                wizardParagraph(body, getString(R.string.wizard_mode_body));
+                boolean prerequisites = camera && detection;
+                boolean compatible = DeviceProfiles.modeDetection(this) != null;
+                boolean enabled = prerequisites && compatible && MaskMode.videoOnly(this);
+                wizardStatus(body, getString(!prerequisites ? R.string.wizard_mode_requires_detection
+                        : !compatible ? R.string.wizard_mode_unavailable
+                        : enabled ? R.string.wizard_mode_ready : R.string.wizard_mode_available));
+                wizardAction(actions, prerequisites && compatible && !enabled
+                        ? R.string.wizard_mode_enable : R.string.wizard_next, true, () -> {
+                    if (cameraAvailable() && isWatcherEnabled() && DeviceProfiles.modeDetection(this) != null
+                            && !MaskMode.videoOnly(this)) showVideoModeInfo(() -> { });
+                    else goToSetupPage(6);
+                });
+                if (prerequisites && compatible && !enabled) {
+                    wizardAction(actions, R.string.wizard_not_now, false, () -> goToSetupPage(6));
+                }
+                if (!prerequisites) wizardAction(body, R.string.wizard_configure_detection, false, () -> goToSetupPage(3));
+                break;
+            default:
+                wizardStatus(body, getString(R.string.wizard_summary_overlay));
+                wizardParagraph(body, getString(camera && detection ? R.string.wizard_summary_auto : R.string.wizard_summary_manual));
+                wizardParagraph(body, getString(camera && detection && MaskMode.videoOnly(this)
+                        && DeviceProfiles.modeDetection(this) != null ? R.string.wizard_summary_video : R.string.wizard_summary_all_modes));
+                wizardParagraph(body, getString(R.string.wizard_finish_body));
+                wizardAction(actions, R.string.wizard_finish, true, this::finishSetup);
+                break;
+        }
+        setContentView(window);
+    }
+
+    private TextView wizardText(LinearLayout parent, String text, int size) {
+        TextView label = new TextView(this);
+        label.setText(text);
+        label.setTextColor(getColor(R.color.on_surface));
+        label.setTextSize(size);
+        label.setLineSpacing(dp(3), 1f);
+        parent.addView(label, new LinearLayout.LayoutParams(-1, -2));
+        return label;
+    }
+
+    private void updateDemo() {
+        demoInstructions.setText(demoPhase == 0 ? R.string.wizard_demo_show
+                : demoPhase == 1 ? R.string.wizard_demo_hide : R.string.wizard_demo_done);
+        demoStatus.setText(demoPhase == 0 ? R.string.wizard_demo_wait_show
+                : demoPhase == 1 ? R.string.wizard_demo_wait_hide : R.string.wizard_demo_verified);
+        demoNext.setEnabled(demoPhase == 2);
+    }
+
+    private TextView wizardParagraph(LinearLayout parent, String text) {
+        TextView label = wizardText(parent, text, 17);
+        ((LinearLayout.LayoutParams) label.getLayoutParams()).topMargin = dp(24);
+        return label;
+    }
+
+    private TextView wizardStatus(LinearLayout parent, String text) {
+        TextView label = wizardParagraph(parent, text);
+        label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        label.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        return label;
+    }
+
+    private Button wizardAction(LinearLayout parent, int label, boolean primary, Runnable action) {
+        Button button = new Button(this, null, 0, primary ? R.style.SafeAreaButton_Primary : R.style.SafeAreaButton_Text);
+        button.setText(label);
+        button.setAllCaps(false);
+        button.setOnClickListener(ignored -> action.run());
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(12);
+        parent.addView(button, params);
+        return button;
+    }
+
     private void showQuickButton() {
         if (!Settings.canDrawOverlays(this)) {
-            Intent permission = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getPackageName()));
-            startActivityForResult(permission, OVERLAY_PERMISSION_REQUEST);
+            showAfterPermission = true;
+            explainOverlayPermission();
             return;
         }
         OverlayService.start(this);
         refresh();
     }
 
-    private void showVideoModeInfo(CheckBox option) {
+    private Button setupButton(LinearLayout parent, Runnable action) {
+        Button button = new Button(this, null, 0, R.style.SafeAreaButton);
+        button.setAllCaps(false);
+        button.setOnClickListener(ignored -> action.run());
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(12);
+        parent.addView(button, params);
+        return button;
+    }
+
+    private void explainOverlayPermission() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.setup_overlay_title)
+                .setMessage(getString(R.string.setup_overlay_help, getString(R.string.app_name)))
+                .setNegativeButton(android.R.string.cancel, (dialog, which) -> showAfterPermission = false)
+                .setOnCancelListener(dialog -> showAfterPermission = false)
+                .setPositiveButton(R.string.setup_open_settings, (dialog, which) -> launchOverlaySettings()).show();
+    }
+
+    private void launchOverlaySettings() {
+        try {
+            startActivityForResult(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName())), OVERLAY_PERMISSION_REQUEST);
+        } catch (ActivityNotFoundException | SecurityException unavailable) {
+            showAfterPermission = false;
+            Toast.makeText(this, R.string.setup_settings_unavailable, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void chooseCamera(boolean enableAfterSelection) {
+        chooseCamera(R.string.setup_camera_title, selected -> {
+            MaskMode.setAutoPackage(this, selected);
+            if (!inSetup) appPicker.setSelection(targetSelection(apps, selected));
+            refresh();
+            if (enableAfterSelection) openAccessibilitySettings();
+        });
+    }
+
+    private void chooseCalibrationCamera() {
+        if (!Settings.canDrawOverlays(this)) { explainOverlayPermission(); return; }
+        chooseCamera(R.string.calibration_choose_camera, selected -> {
+            Intent camera = getPackageManager().getLaunchIntentForPackage(selected);
+            if (camera == null) {
+                Toast.makeText(this, R.string.setup_no_camera, Toast.LENGTH_LONG).show();
+                return;
+            }
+            MaskMode.setAutoPackage(this, selected);
+            if (!inSetup) appPicker.setSelection(targetSelection(apps, selected));
+            getSharedPreferences("social_overlay", MODE_PRIVATE).edit()
+                    .putBoolean("calibration_active", true).putBoolean("calibration_from_wizard", inSetup)
+                    .remove("calibration_finished").apply();
+            try {
+                OverlayService.startCalibration(this);
+                startActivity(camera);
+                Toast.makeText(this, R.string.calibration_instructions, Toast.LENGTH_LONG).show();
+            } catch (ActivityNotFoundException | SecurityException unavailable) {
+                stopService(new Intent(this, OverlayService.class));
+                getSharedPreferences("social_overlay", MODE_PRIVATE).edit()
+                        .remove("calibration_active").remove("calibration_from_wizard").apply();
+                Toast.makeText(this, R.string.setup_no_camera, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void chooseCamera(int title, Consumer<String> onSelected) {
+        List<TargetApp> choices = launchableApps();
+        choices.remove(0); // "No app" is still available in the regular picker for manual use.
+        if (choices.isEmpty()) {
+            new AlertDialog.Builder(this).setTitle(R.string.setup_camera_title)
+                    .setMessage(R.string.setup_no_camera).setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        CharSequence[] labels = new CharSequence[choices.size()];
+        for (int i = 0; i < choices.size(); i++) labels[i] = choices.get(i).label;
+        new AlertDialog.Builder(this).setTitle(title)
+                .setItems(labels, (dialog, which) -> {
+                    onSelected.accept(choices.get(which).packageName);
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void enableDetection() {
+        if (MaskMode.autoPackage(this).isEmpty()) chooseCamera(true);
+        else openAccessibilitySettings();
+    }
+
+    private void showVideoModeInfo(Runnable onEnabled) {
         SpannableString message = new SpannableString(getString(R.string.experimental_video_help));
         int github = message.toString().lastIndexOf("GitHub");
         if (github >= 0) {
@@ -321,13 +738,14 @@ public final class MainActivity extends Activity {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(R.string.experimental_video_only).setMessage(message);
-        if (option == null) builder.setPositiveButton(android.R.string.ok, null);
+        if (onEnabled == null) builder.setPositiveButton(android.R.string.ok, null);
         else builder.setPositiveButton(R.string.experimental_enable, (dialog, which) -> {
                     MaskMode.setVideoOnly(this, true);
+                    onEnabled.run();
+                    OverlayService.refreshMask(this);
                     refresh();
                 })
-                .setNegativeButton(android.R.string.cancel, (dialog, which) -> option.setChecked(false))
-                .setOnCancelListener(dialog -> option.setChecked(false));
+                .setNegativeButton(android.R.string.cancel, null);
         TextView text = builder.show().findViewById(android.R.id.message);
         text.setText(message, TextView.BufferType.SPANNABLE);
         text.setMovementMethod(LinkMovementMethod.getInstance());
@@ -339,13 +757,28 @@ public final class MainActivity extends Activity {
     private void openAccessibilitySettings() {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.accessibility_disclosure_title)
-                .setMessage(R.string.accessibility_disclosure)
+                .setMessage(getString(R.string.accessibility_disclosure) + "\n\n"
+                        + getString(R.string.setup_accessibility_help, getString(R.string.watcher_name)))
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.accessibility_continue, (dialog, which) -> {
                     MaskMode.acceptAccessibilityConsent(this);
                     launchAccessibilitySettings();
                 })
                 .show();
+    }
+
+    private void showRestrictedSettingsHelp() {
+        new AlertDialog.Builder(this).setTitle(R.string.setup_blocked_title)
+                .setMessage(getString(R.string.setup_blocked_help, getString(R.string.app_name)))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.setup_app_info, (dialog, which) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:" + getPackageName())));
+                    } catch (ActivityNotFoundException | SecurityException unavailable) {
+                        Toast.makeText(this, R.string.setup_settings_unavailable, Toast.LENGTH_LONG).show();
+                    }
+                }).show();
     }
 
     private void launchAccessibilitySettings() {
@@ -368,7 +801,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showUpdate(UpdateChecker.Release release) {
-        if (isFinishing() || isDestroyed()) return;
+        if (isFinishing() || isDestroyed() || inSetup) return;
         String installed;
         try {
             installed = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
@@ -389,15 +822,29 @@ public final class MainActivity extends Activity {
     }
 
     private void refresh() {
+        if (inSetup) {
+            renderSetup();
+            return;
+        }
+        boolean overlayAllowed = Settings.canDrawOverlays(this);
+        boolean cameraChosen = !MaskMode.autoPackage(this).isEmpty();
+        boolean detectionEnabled = isWatcherEnabled();
+        if (setupStatus != null) {
+            setupStatus.setText(!overlayAllowed ? R.string.setup_overlay_missing
+                    : !cameraChosen ? R.string.setup_manual_ready
+                    : !detectionEnabled ? R.string.setup_detection_missing : R.string.setup_ready);
+        }
         if (modeStatus != null) {
             modeStatus.setText(getString(R.string.mask_status, MaskMode.label(this, MaskMode.get(this))));
         }
         if (opacityStatus != null) opacityStatus.setText(getString(R.string.opacity_value, MaskMode.opacity(this)));
         if (positionStatus != null) {
             int offset = MaskMode.verticalOffset(this);
+            verticalPosition.setProgress(offset + 360);
             positionStatus.setText(getString(MaskMode.hasVerticalOffsetOverride(this)
                     ? R.string.vertical_value : R.string.vertical_default, offset));
         }
+        if (adjustmentArrows != null) adjustmentArrows.setChecked(MaskMode.adjustmentArrows(this));
         if (subtitlePositionStatus != null) {
             boolean enabled = (MaskMode.get(this) & MaskMode.SUBTITLES) != 0;
             subtitlePositionStatus.setText(getString(R.string.subtitle_vertical_value, MaskMode.subtitleOffset(this)));
@@ -410,21 +857,24 @@ public final class MainActivity extends Activity {
             String target = MaskMode.autoPackage(this);
             autoStatus.setText(target.isEmpty() ? getString(R.string.auto_disabled)
                     : getString(R.string.auto_selected, appLabel(target))
-                    + (isWatcherEnabled() ? "" : getString(R.string.auto_enable_hint)));
+                    + (detectionEnabled ? "" : getString(R.string.auto_enable_hint)));
+            detectionButton.setText(detectionEnabled ? R.string.setup_manage_detection : R.string.enable_detection);
         }
         if (experimentalStatus != null) {
-            boolean needsAccessibility = !MaskMode.autoPackage(this).isEmpty() && !isWatcherEnabled();
-            experimentalStatus.setText(MaskMode.autoPackage(this).isEmpty()
-                    ? R.string.experimental_choose_camera : !isWatcherEnabled()
+            experimentalStatus.setText(!overlayAllowed ? R.string.setup_overlay_missing : !cameraChosen
+                    ? R.string.experimental_choose_camera : !detectionEnabled
                     ? R.string.experimental_enable_accessibility : DeviceProfiles.modeDetection(this) == null
                     ? R.string.experimental_no_profile : R.string.experimental_profile_ready);
-            experimentalStatus.setOnClickListener(needsAccessibility ? ignored -> openAccessibilitySettings() : null);
-            experimentalStatus.setClickable(needsAccessibility);
-            experimentalStatus.setFocusable(needsAccessibility);
-            experimentalStatus.setTextColor(getColor(needsAccessibility ? R.color.brand : R.color.on_surface));
-            experimentalStatus.setPaintFlags(needsAccessibility
-                    ? experimentalStatus.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG
-                    : experimentalStatus.getPaintFlags() & ~Paint.UNDERLINE_TEXT_FLAG);
+            Runnable help = !overlayAllowed ? this::explainOverlayPermission
+                    : !cameraChosen ? () -> chooseCamera(false)
+                    : !detectionEnabled ? this::openAccessibilitySettings : null;
+            experimentalStatus.setOnClickListener(help == null ? null : ignored -> help.run());
+            experimentalStatus.setClickable(help != null);
+            experimentalStatus.setFocusable(help != null);
+            experimentalStatus.setTextColor(getColor(help == null ? R.color.on_surface : R.color.brand));
+            experimentalStatus.setPaintFlags(help == null
+                    ? experimentalStatus.getPaintFlags() & ~Paint.UNDERLINE_TEXT_FLAG
+                    : experimentalStatus.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         }
     }
 
@@ -511,8 +961,14 @@ public final class MainActivity extends Activity {
 
     private boolean isWatcherEnabled() {
         if (!MaskMode.accessibilityConsent(this)) return false;
-        String enabled = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        return enabled != null && enabled.contains(new ComponentName(this, AppWatchAccessibilityService.class).flattenToString());
+        AccessibilityManager manager = getSystemService(AccessibilityManager.class);
+        ComponentName expected = new ComponentName(this, AppWatchAccessibilityService.class);
+        if (manager == null) return false;
+        for (AccessibilityServiceInfo service : manager.getEnabledAccessibilityServiceList(
+                AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
+            if (expected.equals(ComponentName.unflattenFromString(service.getId()))) return true;
+        }
+        return false;
     }
 
     private int dp(int value) {

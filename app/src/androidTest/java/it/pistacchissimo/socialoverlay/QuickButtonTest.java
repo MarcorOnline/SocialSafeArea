@@ -6,6 +6,7 @@ package it.pistacchissimo.socialoverlay;
 import android.app.Instrumentation;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -20,8 +21,10 @@ final class QuickButtonTest {
         MainActivity activity = (MainActivity) test.startActivitySync(
                 new Intent(test.getTargetContext(), MainActivity.class)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-        int originalOffset = MaskMode.verticalOffset(test.getTargetContext());
-        boolean hadOverride = MaskMode.hasVerticalOffsetOverride(test.getTargetContext());
+        int originalOffset = test.getTargetContext().getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_offset", DeviceProfiles.defaultOffset(test.getTargetContext()));
+        Integer originalFine = test.getTargetContext().getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_fine_px")
+                ? test.getTargetContext().getSharedPreferences("social_overlay", Context.MODE_PRIVATE).getInt("vertical_fine_px", 0) : null;
+        boolean hadOverride = test.getTargetContext().getSharedPreferences("social_overlay", Context.MODE_PRIVATE).contains("vertical_offset");
         Instrumentation.ActivityMonitor aboutMonitor = test.addMonitor(AboutActivity.class.getName(), null, false);
         Activity[] about = new Activity[1];
         try {
@@ -151,6 +154,8 @@ final class QuickButtonTest {
                 if (about[0] != null) about[0].finish();
                 if (hadOverride) MaskMode.setVerticalOffset(test.getTargetContext(), originalOffset);
                 else MaskMode.resetVerticalOffset(test.getTargetContext());
+                if (originalFine == null) test.getTargetContext().getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().remove("vertical_fine_px").apply();
+                else test.getTargetContext().getSharedPreferences("social_overlay", Context.MODE_PRIVATE).edit().putInt("vertical_fine_px", originalFine).apply();
                 activity.finish();
             });
         }

@@ -146,17 +146,28 @@ final class DeviceProfiles {
         return selected == null ? null : selected.optInt("vertical_offset_dp", 0);
     }
 
+    static boolean isExactProfile(JSONObject profile, String manufacturer, String model, int sdk,
+            String camera, String version) {
+        return valid(profile) && normalize(manufacturer).equals(normalize(profile.optString("manufacturer")))
+                && normalize(model).equals(normalize(profile.optString("model")))
+                && sdk == profile.optInt("android_sdk")
+                && camera != null && !camera.isEmpty() && camera.equals(profile.optString("camera_package"))
+                && version != null && !version.isEmpty() && version.equals(profile.optString("camera_version"));
+    }
+
+    static boolean hasExactProfile(Context context) {
+        String camera = cameraPackage(context);
+        return isExactProfile(detectedProfile(context), Build.MANUFACTURER, Build.MODEL,
+                Build.VERSION.SDK_INT, camera, cameraVersion(context, camera));
+    }
+
     /** Mode rules must never inherit the approximate matching used for offsets. */
     static JSONObject modeDetection(JSONArray entries, String manufacturer, String model, int sdk,
             String camera, String version) {
         if (camera == null || camera.isEmpty() || version == null || version.isEmpty()) return null;
         for (int i = 0; entries != null && i < entries.length(); i++) {
             JSONObject entry = entries.optJSONObject(i);
-            if (valid(entry) && normalize(manufacturer).equals(normalize(entry.optString("manufacturer")))
-                    && normalize(model).equals(normalize(entry.optString("model")))
-                    && sdk == entry.optInt("android_sdk")
-                    && camera.equals(entry.optString("camera_package"))
-                    && version.equals(entry.optString("camera_version"))) {
+            if (isExactProfile(entry, manufacturer, model, sdk, camera, version)) {
                 return entry.optJSONObject("mode_detection");
             }
         }

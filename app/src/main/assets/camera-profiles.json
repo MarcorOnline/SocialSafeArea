@@ -56,5 +56,13 @@
         }
       ]
     }
+  },
+  {
+    "manufacturer": "realme",
+    "model": "RMX5051",
+    "android_sdk": 36,
+    "camera_package": "com.oplus.camera",
+    "camera_version": "6.020.956",
+    "vertical_offset_dp": 38
   }
 ]

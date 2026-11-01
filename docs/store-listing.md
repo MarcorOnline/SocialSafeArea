@@ -16,4 +16,4 @@ Suggested Google Play short description (Italian):
 
 > Vedi le aree sicure di Reels e TikTok mentre registri con la tua fotocamera.
 
-This file prepares copy only; there is no Google Play listing to update yet.
+The app is published on [Google Play](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay). This file records the naming and copy conventions for listing updates.

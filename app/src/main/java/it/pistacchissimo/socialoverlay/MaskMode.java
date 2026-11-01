@@ -21,6 +21,8 @@ final class MaskMode {
     private static final String GUIDE_VISIBLE = "guide_visible";
     private static final String OPACITY = "opacity";
     private static final String VERTICAL_OFFSET = "vertical_offset";
+    private static final String VERTICAL_FINE_PX = "vertical_fine_px";
+    private static final String ADJUSTMENT_ARROWS = "adjustment_arrows";
     private static final String SUBTITLE_OFFSET = "subtitle_offset";
     private static final String AUTO_PACKAGE = "auto_package";
     private static final String DISMISSED = "dismissed";
@@ -60,22 +62,43 @@ final class MaskMode {
         preferences(context).edit().putInt(OPACITY, Math.max(8, Math.min(70, value))).apply();
     }
 
-    /** Offset in dp: enough travel for different manufacturer camera previews. */
+    /** Rounded dp for the slider and community JSON; drawing keeps the exact pixel correction. */
     static int verticalOffset(Context context) {
-        return preferences(context).getInt(VERTICAL_OFFSET, DeviceProfiles.defaultOffset(context));
+        return Math.round(verticalOffsetPx(context) / context.getResources().getDisplayMetrics().density);
+    }
+
+    static float verticalOffsetPx(Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return preferences(context).getInt(VERTICAL_OFFSET, DeviceProfiles.defaultOffset(context)) * density
+                + preferences(context).getInt(VERTICAL_FINE_PX, 0);
+    }
+
+    /** Use the same whole-dp position and limits as the slider. */
+    static void nudgeVerticalOffset(Context context, int dp) {
+        setVerticalOffset(context, verticalOffset(context) + dp);
+    }
+
+    static boolean adjustmentArrows(Context context) {
+        SharedPreferences prefs = preferences(context);
+        return prefs.contains(ADJUSTMENT_ARROWS) ? prefs.getBoolean(ADJUSTMENT_ARROWS, false)
+                : !prefs.getBoolean("calibration_complete", false) && !DeviceProfiles.hasExactProfile(context);
+    }
+
+    static void setAdjustmentArrows(Context context, boolean enabled) {
+        preferences(context).edit().putBoolean(ADJUSTMENT_ARROWS, enabled).apply();
     }
 
     static boolean hasVerticalOffsetOverride(Context context) {
-        return preferences(context).contains(VERTICAL_OFFSET);
+        return preferences(context).contains(VERTICAL_OFFSET) || preferences(context).getInt(VERTICAL_FINE_PX, 0) != 0;
     }
 
     static void resetVerticalOffset(Context context) {
-        preferences(context).edit().remove(VERTICAL_OFFSET).apply();
+        preferences(context).edit().remove(VERTICAL_OFFSET).remove(VERTICAL_FINE_PX).apply();
     }
 
     static void setVerticalOffset(Context context, int value) {
         preferences(context).edit()
-                .putInt(VERTICAL_OFFSET, Math.max(-360, Math.min(360, value))).apply();
+                .putInt(VERTICAL_OFFSET, Math.max(-360, Math.min(360, value))).remove(VERTICAL_FINE_PX).apply();
     }
 
     /** Additional dp relative to the general guide position; zero preserves the original box. */

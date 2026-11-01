@@ -24,6 +24,7 @@ final class SafeAreaGuideView extends View {
     private final int[] windowOrigin = new int[2];
     private final Point screenSize = new Point();
     private float frameScale = 1f;
+    private final boolean tutorial;
     private final DisplayManager.DisplayListener displayListener = new DisplayManager.DisplayListener() {
         @Override public void onDisplayAdded(int displayId) { }
         @Override public void onDisplayRemoved(int displayId) { }
@@ -31,7 +32,12 @@ final class SafeAreaGuideView extends View {
     };
 
     SafeAreaGuideView(Context context) {
+        this(context, false);
+    }
+
+    SafeAreaGuideView(Context context, boolean tutorial) {
         super(context);
+        this.tutorial = tutorial;
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 
@@ -56,7 +62,7 @@ final class SafeAreaGuideView extends View {
                 panelHeight / REFERENCE_SCREEN_HEIGHT);
         float left = (panelWidth - FRAME_WIDTH * frameScale) / 2f;
         float top = PREVIEW_TOP * frameScale
-                + MaskMode.verticalOffset(getContext()) * getResources().getDisplayMetrics().density;
+                + MaskMode.verticalOffsetPx(getContext());
         canvas.save();
         // Android may inset an overlay below the cutout/status bar. Convert screen to local pixels.
         canvas.translate(-windowOrigin[0], -windowOrigin[1]);
@@ -80,7 +86,7 @@ final class SafeAreaGuideView extends View {
         canvas.translate(left, top);
         canvas.scale(frameScale, frameScale);
         canvas.clipRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
-        int mode = MaskMode.get(getContext());
+        int mode = tutorial ? MaskMode.BOTH : MaskMode.get(getContext());
         int reels = getContext().getColor(R.color.mask_reels);
         int tiktok = getContext().getColor(R.color.mask_tiktok);
         if ((mode & MaskMode.TIKTOK) != 0) {

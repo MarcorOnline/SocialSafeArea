@@ -175,8 +175,12 @@ public final class UpdateCheckTest extends Instrumentation {
         boolean hadAttempt = preferences.contains("last_attempt");
         long savedAttempt = preferences.getLong("last_attempt", 0);
         String savedRelease = preferences.getString("release", null);
+        SharedPreferences setup = context.getSharedPreferences("social_overlay", Context.MODE_PRIVATE);
+        boolean hadWizard = setup.contains("wizard_complete");
+        boolean savedWizard = setup.getBoolean("wizard_complete", false);
         MainActivity activity = null;
         try {
+            setup.edit().putBoolean("wizard_complete", true).commit();
             long attempt = System.currentTimeMillis();
             preferences.edit().putLong("last_attempt", attempt).putString("release", json).commit();
             activity = (MainActivity) startActivitySync(new Intent(context, MainActivity.class)
@@ -206,6 +210,10 @@ public final class UpdateCheckTest extends Instrumentation {
                 runOnMainSync(screen::finish);
                 waitForIdleSync();
             }
+            SharedPreferences.Editor restoreWizard = setup.edit();
+            if (hadWizard) restoreWizard.putBoolean("wizard_complete", savedWizard);
+            else restoreWizard.remove("wizard_complete");
+            restoreWizard.commit();
             SharedPreferences.Editor restore = preferences.edit();
             if (hadAttempt) restore.putLong("last_attempt", savedAttempt);
             else restore.remove("last_attempt");

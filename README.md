@@ -6,9 +6,9 @@
 
 A lightweight Android overlay that helps you keep faces, captions and important details clear of the interface elements in Instagram Reels and TikTok.
 
-**Google Play: v1.4.1 · GitHub APK: v1.4.0 · Android 8.0+ (API 26) · GPL-3.0-only**
+**v1.5.0 · Google Play and GitHub APK · Android 8.0+ (API 26) · GPL-3.0-only**
 
-Version **1.4.1** is available on Google Play, with an API 36 target, an in-app privacy link and explicit consent for optional camera detection. See [Play build details and checks](docs/google-play.md).
+Version **1.5.0** adds guided setup, calibration directly over your camera and height arrows. Google Play updates become available after Google's review. See [release notes](docs/releases/v1.5.0.md) and [Play build details and checks](docs/google-play.md).
 
 The app appears as **Safe Area** on your phone and **Safe Area: Reels & TikTok** on Google Play.
 
@@ -45,28 +45,38 @@ Install the app using **Get it on Google Play** above, then open **Safe Area**. 
 
 ### Allow display on top of the camera
 
-Open **Safe Area**, then tap **Show quick button**. On Android's permission page, select Safe Area and enable **Display over other apps** / **Appear on top**, then return to the app. On Samsung, the same switch is available under **Settings → Apps → Special access → Appear on top**; wording can vary by Android version. Published builds before v1.1.0 use the label Social Safe Area.
+The first launch opens **Guided setup** on dedicated screens. The main screen stays hidden until setup is complete:
 
-This permission is required to draw over your camera. Accessibility is a separate, optional permission.
+1. Allow SAFE to appear over other apps. The wizard explains Android settings first and only continues when the actual permission is granted.
+2. Try the real SAFE button: one tap shows the mask, the second hides it. **Continue** unlocks only after both gestures. Practice does not change saved masks, button position or ON/OFF state.
+3. **Calibrate now** opens the app list: choose your camera, switch to portrait Video 9:16 and adjust the visible mask with ↑ and ↓. Each tap moves it by 1 dp, matching the slider; hold to keep moving. The stronger green **Done** button saves the position and returns to step 4. **Skip** continues without calibration. After Done, arrows stay hidden unless enabled under **Customize mask**; its **Guided adjustment in camera** button repeats the same flow. Done appears only during guided calibration. SAFE and the arrows stay on the right; Done appears to their left.
+4. Choose your camera, or choose manual use.
+5. Optionally enable camera detection through Android accessibility. Disclosure, instructions and restricted-settings help precede system settings. **Not now** skips this feature.
+6. Consider experimental Photo/Video detection. Enabling it requires a chosen camera, active camera detection and an exact compatible profile; otherwise the wizard explains manual control.
+7. Review what is actually enabled and enter the app.
 
-Settings are grouped in **Customize mask**, **Automatic opening** and **Experimental features**, all initially closed: opening one section closes the previous one. **Show quick button** stays available at the top.
+Returning without a permission leaves it unconfirmed. Setup resumes after closing the app, including halfway through practice. Revoking overlay permission before completion returns to step one. You can leave without granting permission, but cannot complete setup without it. **Guided setup** on home lets you repeat it. Users who saw the earlier inline guide also go through this wizard once.
+
+On Samsung, overlay permission may be called **Appear on top**, under **Settings → Apps → Special access**. Menu names vary. Accessibility is a separate, optional permission.
+
+After setup, settings are grouped in **Customize mask**, **Automatic opening** and **Experimental features**, all initially closed: opening one section closes the previous one.
 
 1. Open **Customize mask** and turn the **Reel**, **TikTok** and **Subtitles** checkboxes on or off as needed.
 2. Adjust **Mask opacity** and **General vertical position**, if needed. Its **Reset** restores the detected profile's default alignment. **Subtitles vertical position** moves just the subtitle box relative to that general position; its **Reset** returns the additional offset to zero. The subtitle slider and its Reset are disabled when **Subtitles** is unchecked, keeping the saved position for next time.
-3. Tap **Show quick button**. This action only shows the button; repeated taps do not change the mask's ON/OFF state.
+3. Tap **Show quick button**. This action only shows the button; repeated taps do not change the mask’s ON/OFF state.
 4. Use the floating `SAFE / ON/OFF` button to turn the mask on or off. Only this button changes that state.
 5. Drag the quick button to reposition it. Drag it onto the bottom trash target to close the overlay.
 
-Opening Safe Area also restores the quick button when overlay permission is already granted. Mask choice, opacity, vertical alignment, quick-button position and ON/OFF state are stored locally.
+After the wizard, use **Show quick button** to start the button. Subsequent launches restore it when overlay permission is granted. Mask choice, opacity, vertical alignment, quick-button position and ON/OFF state are stored locally.
 
 ### Automatically follow your camera app
 
 1. Open **Automatic opening** and, in **Show quick button when I open**, select your camera app.
-2. Tap **Enable camera detection**, review the disclosure, and choose **Continue to Android settings** only if you want this optional feature. **Cancel** retains manual control without opening settings.
-3. Find **Safe Area camera detection** under installed/downloaded apps or services, switch it on and confirm Android's prompt.
+2. Tap **Enable camera detection**. If no app is selected, Safe Area asks you to choose one. Review the instructions and disclosure, then choose **Continue to Android settings** only if you want this optional feature. **Cancel** retains manual control without opening settings.
+3. Find **Safe Area camera detection** under installed/downloaded apps or services, switch it on and confirm Android’s prompt.
 4. Return to Safe Area, then open the selected camera.
 
-If Android blocks Accessibility for a sideloaded app, its **App info → ⋮ → Allow restricted settings** option may need to be enabled first. Only do this for a build you trust; see [Android's explanation of restricted settings](https://support.google.com/android/answer/12623953). Menu names depend on the OS and manufacturer.
+If Android blocks Accessibility for a sideloaded app, tap **Activation blocked?** in the wizard or **Automatic opening** for an explanation before opening App info. Its **App info → ⋮ → Allow restricted settings** option may need to be enabled first. Only do this for a build you trust; see [Android's explanation of restricted settings](https://support.google.com/android/answer/12623953). Menu names depend on the OS and manufacturer.
 
 Opening the selected app shows the quick button and restores the saved mask state. Switching to another app or the launcher hides both the button and the mask. Returning to the selected app restores them without changing ON/OFF.
 
@@ -78,7 +88,8 @@ Detection uses full-screen window-change events. Partial popups and panels do no
 
 Under **Experimental features**, **Show the mask only in "Video" mode** is off by default.
 The adjacent **?** explains how it works and which controls it accesses before
-enabling it. It requires camera detection and an exact compatible profile. The
+enabling it. If a requirement is missing, the option stays off and Safe Area opens
+the step to complete. It requires camera detection and an exact compatible profile. The
 initial profile supports Samsung Camera in Italian, English, French, Spanish and
 German, in portrait, on the device
 and camera version listed in the profiles.
@@ -111,7 +122,7 @@ The mask is a composition aid based on a fixed reference, not an official guaran
 
 The most useful community contribution is a **correct vertical mask offset for widely used camera apps**, tested on a real device.
 
-Profiles live in one small file: [`camera-profiles.json`](app/src/main/assets/camera-profiles.json). Each entry records manufacturer, model, Android API, camera package/version and offset in dp. Calibrate with the slider, then open **ⓘ → Copy calibration JSON** and submit the entry in a pull request to **`develop`**.
+Profiles live in one small file: [`camera-profiles.json`](app/src/main/assets/camera-profiles.json). Each entry records manufacturer, model, Android API, camera package/version and offset in dp. Calibrate with the arrows or slider, then open **ⓘ → Copy calibration JSON** and submit the entry in a pull request to **`develop`**.
 
 On startup the app detects the device, OS and selected camera (or default video camera). It suggests the closest usable profile: same model first, then nearest Android API, then camera app/version. If the model is unknown it searches the same manufacturer; an unknown manufacturer uses the **first valid profile** as the default. Equal scores preserve file order.
 

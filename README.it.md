@@ -6,15 +6,15 @@
 
 Una maschera leggera per Android che ti aiuta a tenere volti, scritte e dettagli importanti lontani dagli elementi dell’interfaccia di Instagram Reels e TikTok.
 
-**v1.5.0 · Google Play e APK GitHub · Android 8.0+ (API 26) · GPL-3.0-only**
+**v1.5.1 · Google Play e APK GitHub · Android 8.0+ (API 26) · GPL-3.0-only**
 
-La versione **1.5.0** aggiunge configurazione guidata, calibrazione direttamente sulla fotocamera e frecce per regolare l’altezza. Gli aggiornamenti su Google Play diventano disponibili dopo la revisione di Google. Vedi [note della versione](docs/releases/v1.5.0.md) e [dettagli della build e verifiche per Play](docs/google-play.md).
+La versione **1.5.1** corregge i bordi della maschera sugli schermi meno allungati e aggiunge un profilo verificato per Google Camera su Pixel 2 XL, incluso il rilevamento Foto/Video facoltativo nelle cinque lingue supportate. Questa versione è disponibile su GitHub; l’invio a Google Play avverrà separatamente. Vedi [note della versione](docs/releases/v1.5.1.md) e [dettagli della build e verifiche per Play](docs/google-play.md).
 
 Sul telefono l’app si chiama **Safe Area** e su Google Play **Safe Area: Reels & TikTok**.
 
 [![Disponibile su Google Play](docs/download-google-play-it.svg)](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay)
 
-**Installa da Google Play** per un’installazione semplice e aggiornamenti gestiti dallo store. Se preferisci l’installazione diretta, [scarica l’APK firmato v1.4.0 da GitHub](https://github.com/MarcorOnline/SocialSafeArea/releases/download/v1.4.0/Social-Safe-Area-1.4.0.apk) oppure consulta le [note di rilascio e i checksum](https://github.com/MarcorOnline/SocialSafeArea/releases/tag/v1.4.0). Non serve compilare con nessuna delle due opzioni.
+**Installa da Google Play** per un’installazione semplice e aggiornamenti gestiti dallo store. Se preferisci l’installazione diretta, [scarica l’APK firmato v1.5.1 da GitHub](https://github.com/MarcorOnline/SocialSafeArea/releases/download/v1.5.1/Social-Safe-Area-1.5.1.apk) oppure consulta le [note di rilascio e i checksum](https://github.com/MarcorOnline/SocialSafeArea/releases/tag/v1.5.1). Non serve compilare con nessuna delle due opzioni.
 
 L’app disegna una guida trasparente sopra la fotocamera che usi già. Non registra video, non sostituisce la fotocamera e non modifica il file registrato. La guida compare sullo schermo del telefono, ma non viene impressa nelle registrazioni della fotocamera.
 
@@ -92,7 +92,8 @@ limiti prima dell’attivazione. Se manca un requisito, l’opzione resta spenta
 Safe Area apre il passaggio da completare. Richiede il rilevamento fotocamera e un profilo
 esatto compatibile: quello iniziale supporta Samsung Camera in italiano, inglese,
 francese, spagnolo e tedesco, in verticale, sul dispositivo e sulla versione
-indicati nei profili.
+indicati nei profili. È supportata anche Google Camera 8.2.204.362396359.12 su
+Pixel 2 XL, Android 11 / API 30, in verticale e con la fotocamera in italiano, inglese, francese, spagnolo o tedesco.
 
 La funzione legge localmente i comandi accessibili della fotocamera selezionata
 in risposta agli eventi, senza screenshot né controlli periodici. In Fotografia
@@ -112,7 +113,9 @@ Da Android 13 l’app non richiede il permesso per le notifiche, quindi questa n
 
 Serve Android 8.0 o successivo. L’app è stata verificata su **Samsung Galaxy S26 Ultra (SM-S948B), Android 17 / API 37, Samsung Camera 17.0.00.43**, in verticale, con anteprima della fotocamera in **9:16**.
 
-Il riferimento predefinito è uno schermo da 1080 × 2340 pixel con l’anteprima video effettiva in `x=0…1080, y=184…2104`: un fotogramma da 1080 × 1920 pixel. La maschera viene scalata in modo uniforme e il disegno tiene conto degli spostamenti della finestra Android. La densità viene usata per i comandi e per la regolazione verticale manuale.
+Il riferimento predefinito è uno schermo da 1080 × 2340 pixel con l’anteprima video effettiva in `x=0…1080, y=184…2104`: un fotogramma da 1080 × 1920 pixel. La maschera viene scalata uniformemente sulla larghezza fisica del pannello, mantenendo il formato 9:16 anche sugli schermi meno allungati. La finestra di disegno si estende sulle barre di sistema e sugli eventuali ritagli dello schermo. La densità viene usata per i comandi e per la regolazione verticale manuale.
+
+Verificato anche **Google Pixel 2 XL, Android 11 / API 30, Google Camera 8.2.204.362396359.12**, con schermo 1440 × 2880, densità 560 dpi e anteprima video `x=0…1440, y=152…2712`. Il profilo incluso usa −27 dp per allineare verticalmente la maschera, entro l’arrotondamento al dp intero. Se esiste già una regolazione manuale, **Reset** applica il nuovo profilo.
 
 Altri dispositivi, interfacce della fotocamera, rapporti d’aspetto e impostazioni dello schermo possono richiedere una regolazione verticale, anche quando viene suggerito un profilo simile. La guida resta fissa sul pannello fisico quando Android ruota, mantenendo scala e allineamento verticale salvato. Non individua automaticamente l’anteprima della fotocamera, non ne calibra larghezza e altezza e non offre una geometria separata per i video orizzontali. Android o singole app possono inoltre limitare le sovrapposizioni nelle schermate protette.
 
@@ -214,6 +217,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell am instrument -w it.pistacchissimo.socialoverlay.test/it.pistacchissimo.socialoverlay.GuideRenderTest
 adb shell am instrument -w it.pistacchissimo.socialoverlay.test/it.pistacchissimo.socialoverlay.GuideRotationTest
+adb shell am instrument -w it.pistacchissimo.socialoverlay.test/it.pistacchissimo.socialoverlay.GuideViewportTest
 ```
 
 Su Windows usa `.\gradlew.bat` al posto di `./gradlew`.
@@ -223,6 +227,8 @@ Il test strumentale richiede il permesso di sovrapposizione e lo schermo di rife
 Sul Samsung di riferimento i test strumentali possono lasciare scollegato il servizio di accessibilità già attivato. Dopo il test, reinstalla l’APK dell’app e riapri Social Safe Area per ricollegarlo prima di verificare il funzionamento automatico.
 
 Il test di rotazione richiede lo schermo di riferimento acceso e sbloccato. Confronta i pixel della maschera nelle coordinate del pannello fisico a 0°, 90°, 180° e 270°, includendo un offset verticale manuale, poi ripristina le preferenze salvate e le impostazioni di rotazione.
+
+`GuideViewportTest` verifica la copertura dei bordi della maschera e la finestra a schermo intero su dimensioni diverse, nelle quattro rotazioni. Sul Pixel sopra descritto, aggiungi `-e frame_top 152` prima del componente per controllare anche l’allineamento del profilo con l’anteprima misurata.
 
 Per un Samsung collegato, con **Camera** selezionata e accessibilità attiva:
 

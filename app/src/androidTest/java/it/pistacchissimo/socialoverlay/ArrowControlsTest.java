@@ -163,7 +163,7 @@ public final class ArrowControlsTest extends Instrumentation {
             result.putString("result", "PASS: physical one-dp taps/hold, persistence, drag/trash, visibility, limits; wizard skip, real camera calibration, Done return, manual arrows without Done, guided retry from home and interruption");
         } catch (Throwable error) {
             code = 0;
-            result.putString("error", error.toString());
+            result.putString("error", android.util.Log.getStackTraceString(error));
         } finally {
             onMain(() -> {
                 context.stopService(new Intent(context, OverlayService.class));
@@ -414,9 +414,16 @@ public final class ArrowControlsTest extends Instrumentation {
     }
 
     private Rect bounds(int description) {
-        AccessibilityNodeInfo node = find(description);
-        try { Rect rect = new Rect(); node.getBoundsInScreen(rect); return rect; }
-        finally { node.recycle(); }
+        // A floating window can be briefly absent while WindowManager relays out the arrow group.
+        for (int attempt = 0; attempt < 30; attempt++) {
+            AccessibilityNodeInfo node = find(description);
+            if (node != null) {
+                try { Rect rect = new Rect(); node.getBoundsInScreen(rect); return rect; }
+                finally { node.recycle(); }
+            }
+            SystemClock.sleep(100);
+        }
+        throw new AssertionError("Overlay control missing: " + getTargetContext().getString(description));
     }
 
     private void await(int description, boolean present) {

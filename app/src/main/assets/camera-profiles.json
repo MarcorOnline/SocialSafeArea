@@ -64,5 +64,68 @@
     "camera_package": "com.oplus.camera",
     "camera_version": "6.020.956",
     "vertical_offset_dp": 38
+  },
+  {
+    "manufacturer": "Google",
+    "model": "Pixel 2 XL",
+    "android_sdk": 30,
+    "camera_package": "com.google.android.GoogleCamera",
+    "camera_version": "8.2.204.362396359.12",
+    "vertical_offset_dp": -27,
+    "mode_detection": {
+      "orientation": "portrait",
+      "rules": [
+        {
+          "mode": "video",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Avvia video"
+        },
+        {
+          "mode": "photo",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Scatta foto"
+        },
+        {
+          "mode": "video",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Start video"
+        },
+        {
+          "mode": "photo",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Take photo"
+        },
+        {
+          "mode": "video",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Démarrer la vidéo"
+        },
+        {
+          "mode": "photo",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Prendre une photo"
+        },
+        {
+          "mode": "video",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Iniciar vídeo"
+        },
+        {
+          "mode": "photo",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Hacer una foto"
+        },
+        {
+          "mode": "video",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Video starten"
+        },
+        {
+          "mode": "photo",
+          "view_id": "com.google.android.GoogleCamera:id/shutter_button",
+          "content_description": "Foto aufnehmen"
+        }
+      ]
+    }
   }
 ]

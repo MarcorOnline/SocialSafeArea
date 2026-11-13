@@ -8,9 +8,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.WindowManager;
 
 /** Renders the actual overlay window on the connected 1080x2340 reference device. */
@@ -50,14 +48,7 @@ public final class GuideRenderTest extends Instrumentation {
                 MaskMode.setVerticalOffset(context, 0);
                 MaskMode.resetSubtitleOffset(context);
                 guide[0] = new SafeAreaGuideView(context);
-                WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                        -1, -1, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                                | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                        PixelFormat.TRANSLUCENT);
-                params.gravity = Gravity.TOP | Gravity.START;
-                manager.addView(guide[0], params);
+                manager.addView(guide[0], OverlayService.guideLayoutParams());
             });
             waitForIdleSync();
             onMain(() -> {

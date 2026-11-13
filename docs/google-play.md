@@ -1,6 +1,6 @@
 # Google Play preparation
 
-Version **1.5.0** (version code **12**) updates the existing [Google Play app](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay). Store availability depends on Google's review and rollout; Play Console is the source for the current submission status. This document describes the Play build, signing requirements and verification steps.
+Version **1.5.1** (version code **13**) includes the GitHub APK and a separately signed Play bundle for the existing [Google Play app](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay). Store availability depends on submission, Google's review and rollout; Play Console is the source for the current submission status. A local signed bundle does not establish that an upload or review submission has completed. This document describes the Play build, signing requirements and verification steps.
 
 ## Android requirements
 
@@ -10,7 +10,11 @@ Version **1.5.0** (version code **12**) updates the existing [Google Play app](h
 
 The `play` build type is intended for Google Play: it disables the automatic GitHub update check and removes the Internet permission. Updates are handled by Google Play. External links still open in the user's browser on an explicit tap. The standard `release` and `debug` builds retain the existing GitHub update check. This distinction avoids unnecessary network traffic and data-disclosure ambiguity in the Play build without changing APK distribution behavior.
 
-[Google Play's target API requirement](https://support.google.com/googleplay/android-developer/answer/11926878) was checked on 2026-11-01: app updates must target API 36 or higher. This build targets API 36. The build-tool setup was checked against [the minimum AGP versions](https://developer.android.com/build/releases/about-agp) on 2026-10-26.
+[Google Play's target API requirement](https://support.google.com/googleplay/android-developer/answer/11926878) was checked on 2026-11-13: app updates must target API 36 or higher. This build targets API 36. The build-tool setup was checked against [the minimum AGP versions](https://developer.android.com/build/releases/about-agp) on 2026-10-26.
+
+Version 1.5.1 store assets and the changelog in all five interface languages are in
+[`docs/store`](store/README.md). Screenshot exports follow the current
+[Google Play preview-asset requirements](https://support.google.com/googleplay/android-developer/answer/9866151).
 
 ## Privacy and optional accessibility
 

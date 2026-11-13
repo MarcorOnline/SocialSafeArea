@@ -1,9 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <instrumentation
-        android:name="it.pistacchissimo.socialoverlay.ArrowControlsTest"
+        android:name="it.pistacchissimo.socialoverlay.GuideRenderTest"
         android:targetPackage="it.pistacchissimo.socialoverlay" />
     <instrumentation
-        android:name="it.pistacchissimo.socialoverlay.GuideRenderTest"
+        android:name="it.pistacchissimo.socialoverlay.ArrowControlsTest"
         android:targetPackage="it.pistacchissimo.socialoverlay" />
     <instrumentation
         android:name="it.pistacchissimo.socialoverlay.GuideRotationTest"
@@ -13,5 +13,8 @@
         android:targetPackage="it.pistacchissimo.socialoverlay" />
     <instrumentation
         android:name="it.pistacchissimo.socialoverlay.PrivacyFlowTest"
+        android:targetPackage="it.pistacchissimo.socialoverlay" />
+    <instrumentation
+        android:name="it.pistacchissimo.socialoverlay.GuideViewportTest"
         android:targetPackage="it.pistacchissimo.socialoverlay" />
 </manifest>

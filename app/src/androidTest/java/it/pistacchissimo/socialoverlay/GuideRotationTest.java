@@ -8,11 +8,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.Gravity;
 import android.view.WindowManager;
 
 /** Compares the real guide in physical panel coordinates through all display rotations. */
@@ -53,14 +51,7 @@ public final class GuideRotationTest extends Instrumentation {
                 MaskMode.setVerticalOffset(context, 42);
                 MaskMode.setSubtitleOffset(context, -240);
                 guide[0] = new SafeAreaGuideView(context);
-                WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                        -1, -1, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                                | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                        PixelFormat.TRANSLUCENT);
-                params.gravity = Gravity.TOP | Gravity.START;
-                manager.addView(guide[0], params);
+                manager.addView(guide[0], OverlayService.guideLayoutParams());
             });
             waitForIdleSync();
             Bitmap reference = render(guide[0], manager);

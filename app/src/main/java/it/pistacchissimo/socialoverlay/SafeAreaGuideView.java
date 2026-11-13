@@ -18,7 +18,6 @@ import android.view.WindowManager;
 final class SafeAreaGuideView extends View {
     private static final float FRAME_WIDTH = 1080f;
     private static final float FRAME_HEIGHT = 1920f;
-    private static final float REFERENCE_SCREEN_HEIGHT = 2340f;
     private static final float PREVIEW_TOP = 184f;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final int[] windowOrigin = new int[2];
@@ -57,10 +56,8 @@ final class SafeAreaGuideView extends View {
         getLocationOnScreen(windowOrigin);
         boolean sideways = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270;
         int panelWidth = sideways ? screenSize.y : screenSize.x;
-        int panelHeight = sideways ? screenSize.x : screenSize.y;
-        frameScale = Math.min(panelWidth / FRAME_WIDTH,
-                panelHeight / REFERENCE_SCREEN_HEIGHT);
-        float left = (panelWidth - FRAME_WIDTH * frameScale) / 2f;
+        // The 9:16 preview spans the panel width; fitting the reference screen height adds borders.
+        frameScale = panelWidth / FRAME_WIDTH;
         float top = PREVIEW_TOP * frameScale
                 + MaskMode.verticalOffsetPx(getContext());
         canvas.save();
@@ -83,7 +80,7 @@ final class SafeAreaGuideView extends View {
             default:
                 break;
         }
-        canvas.translate(left, top);
+        canvas.translate(0, top);
         canvas.scale(frameScale, frameScale);
         canvas.clipRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
         int mode = tutorial ? MaskMode.BOTH : MaskMode.get(getContext());

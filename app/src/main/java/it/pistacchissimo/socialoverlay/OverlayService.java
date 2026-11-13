@@ -276,7 +276,7 @@ public final class OverlayService extends Service {
                     toggleParams.y = clamp(buttonDownY + moveY, minimum, Math.max(minimum, maximum));
                     windowManager.updateViewLayout(toggle, toggleParams);
                     positionArrows();
-                    updateTrashHover();
+                    updateTrashHover(event.getRawY());
                 }
                 return true;
             case MotionEvent.ACTION_UP:
@@ -480,6 +480,10 @@ public final class OverlayService extends Service {
 
     private void addGuide() {
         guide = new SafeAreaGuideView(this, tutorial || calibrating);
+        windowManager.addView(guide, guideLayoutParams());
+    }
+
+    static WindowManager.LayoutParams guideLayoutParams() {
         WindowManager.LayoutParams guideParams = new WindowManager.LayoutParams(
                 -1, -1, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -487,7 +491,16 @@ public final class OverlayService extends Service {
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         guideParams.gravity = Gravity.TOP | Gravity.START;
-        windowManager.addView(guide, guideParams);
+        if (Build.VERSION.SDK_INT >= 30) {
+            guideParams.setFitInsetsTypes(0);
+            guideParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        } else {
+            guideParams.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            if (Build.VERSION.SDK_INT >= 28) {
+                guideParams.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            }
+        }
+        return guideParams;
     }
 
     private void hideGuide() {
@@ -501,7 +514,7 @@ public final class OverlayService extends Service {
         longPressed = true;
         dragging = true;
         showTrash();
-        updateTrashHover();
+        updateTrashHover(touchDownY);
     }
 
     private void showTrash() {
@@ -529,9 +542,10 @@ public final class OverlayService extends Service {
         windowManager.addView(trash, params);
     }
 
-    private void updateTrashHover() {
+    private void updateTrashHover(float pointerY) {
         if (trash == null) return;
-        overTrash = toggleParams.y + dp(upArrow == null ? 24 : 48) >= trashTop;
+        // Arrows keep the button above navigation controls; the finger can still reach the trash.
+        overTrash = Math.max(pointerY, toggleParams.y + dp(upArrow == null ? 24 : 48)) >= trashTop;
         trash.setAlpha(overTrash ? 1f : .65f);
     }
 

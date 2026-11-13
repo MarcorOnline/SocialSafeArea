@@ -1,0 +1,25 @@
+<it-IT>
+Corretti i bordi della maschera sugli schermi meno allungati, mantenendo il formato 9:16.
+Nuovo profilo Google Camera per Pixel 2 XL, con rilevamento Foto/Video facoltativo in italiano, inglese, francese, spagnolo e tedesco.
+Migliorata la chiusura trascinando il bottone nel cestino quando sono visibili le frecce.
+</it-IT>
+<en-US>
+Fixed mask borders on shorter displays while preserving the 9:16 frame.
+New Pixel 2 XL Google Camera profile, with optional Photo/Video detection in Italian, English, French, Spanish and German.
+Improved drag-to-trash dismissal while the height arrows are visible.
+</en-US>
+<fr-FR>
+Correction des bordures du masque sur les écrans moins allongés, en conservant le format 9:16.
+Nouveau profil Google Camera pour Pixel 2 XL, avec détection Photo/Vidéo facultative en italien, anglais, français, espagnol et allemand.
+Fermeture par glissement vers la corbeille améliorée lorsque les flèches sont visibles.
+</fr-FR>
+<es-ES>
+Corregidos los bordes de la máscara en pantallas menos alargadas, manteniendo el formato 9:16.
+Nuevo perfil de Google Camera para Pixel 2 XL, con detección opcional de Foto/Vídeo en italiano, inglés, francés, español y alemán.
+Mejorado el cierre al arrastrar el botón a la papelera con las flechas visibles.
+</es-ES>
+<de-DE>
+Maskenränder auf weniger länglichen Displays korrigiert; das 9:16-Format bleibt erhalten.
+Neues Google-Camera-Profil für Pixel 2 XL mit optionaler Foto/Video-Erkennung auf Italienisch, Englisch, Französisch, Spanisch und Deutsch.
+Schließen durch Ziehen in den Papierkorb bei sichtbaren Höhenpfeilen verbessert.
+</de-DE>

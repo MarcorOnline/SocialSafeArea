@@ -20,6 +20,25 @@ the optional `mode_detection` object described below:
 
 This initial entry was tested on **Samsung Galaxy S26 Ultra, Android 17 / API 37**.
 
+The Google Pixel 2 XL entry was verified on Android 11 / API 30 with Google Camera
+8.2.204.362396359.12 in portrait, at 1440 × 2880 and 560 dpi. Its 9:16 video preview
+occupies `x=0…1440, y=152…2712`; the −27 dp offset aligns the full-width guide within
+whole-dp rounding. The optional mode rules match only the accessible shutter button.
+
+The following shutter descriptions were observed on the real Pixel in all five
+camera languages. Other descriptions fall back to the saved manual state.
+Google Play may download a camera language split after Android's language changes;
+verify the camera's actual controls before recording a localized profile. No
+preview images are read by the app.
+
+| Camera language | Video | Photo |
+| --- | --- | --- |
+| Italian | `Avvia video` | `Scatta foto` |
+| English | `Start video` | `Take photo` |
+| French | `Démarrer la vidéo` | `Prendre une photo` |
+| Spanish | `Iniciar vídeo` | `Hacer una foto` |
+| German | `Video starten` | `Foto aufnehmen` |
+
 | Field | Meaning |
 | --- | --- |
 | `manufacturer` | `Build.MANUFACTURER`, ignoring case and surrounding whitespace. |

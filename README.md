@@ -6,15 +6,15 @@
 
 A lightweight Android overlay that helps you keep faces, captions and important details clear of the interface elements in Instagram Reels and TikTok.
 
-**v1.5.0 · Google Play and GitHub APK · Android 8.0+ (API 26) · GPL-3.0-only**
+**v1.5.1 · Google Play and GitHub APK · Android 8.0+ (API 26) · GPL-3.0-only**
 
-Version **1.5.0** adds guided setup, calibration directly over your camera and height arrows. Google Play updates become available after Google's review. See [release notes](docs/releases/v1.5.0.md) and [Play build details and checks](docs/google-play.md).
+Version **1.5.1** fixes mask borders on shorter displays and adds a verified Google Camera profile for Pixel 2 XL, including optional Photo/Video detection in all five supported languages. This version is available on GitHub; the Google Play submission will follow separately. See [release notes](docs/releases/v1.5.1.md) and [Play build details and checks](docs/google-play.md).
 
 The app appears as **Safe Area** on your phone and **Safe Area: Reels & TikTok** on Google Play.
 
 [![Get it on Google Play](docs/download-google-play-en.svg)](https://play.google.com/store/apps/details?id=it.pistacchissimo.socialoverlay)
 
-**Install from Google Play** for straightforward installation and updates through the store. If you prefer to install it directly, [download the signed APK v1.4.0 from GitHub](https://github.com/MarcorOnline/SocialSafeArea/releases/download/v1.4.0/Social-Safe-Area-1.4.0.apk) or see its [release notes and checksums](https://github.com/MarcorOnline/SocialSafeArea/releases/tag/v1.4.0). No compilation is needed with either option.
+**Install from Google Play** for straightforward installation and updates through the store. If you prefer to install it directly, [download the signed APK v1.5.1 from GitHub](https://github.com/MarcorOnline/SocialSafeArea/releases/download/v1.5.1/Social-Safe-Area-1.5.1.apk) or see its [release notes and checksums](https://github.com/MarcorOnline/SocialSafeArea/releases/tag/v1.5.1). No compilation is needed with either option.
 
 The app draws a transparent guide over your existing camera app. It does not record video, replace the camera or modify the recorded file. The guide is visible on the phone screen; it is not burned into camera recordings.
 
@@ -92,7 +92,9 @@ enabling it. If a requirement is missing, the option stays off and Safe Area ope
 the step to complete. It requires camera detection and an exact compatible profile. The
 initial profile supports Samsung Camera in Italian, English, French, Spanish and
 German, in portrait, on the device
-and camera version listed in the profiles.
+and camera version listed in the profiles. Google Camera 8.2.204.362396359.12 on
+Pixel 2 XL, Android 11 / API 30, is also supported in portrait with the camera
+language set to Italian, English, French, Spanish or German.
 
 The feature reads the selected camera's accessible controls locally after UI
 events, without screenshots or periodic polling. Photo hides the guide but
@@ -112,7 +114,9 @@ On Android 13 and later, the app does not request notification permission, so th
 
 Android 8.0 or newer is required. The app has been verified on a **Samsung Galaxy S26 Ultra (SM-S948B), Android 17 / API 37, Samsung Camera 17.0.00.43**, in portrait mode, with a **9:16** camera preview.
 
-The default reference is a 1080 × 2340 display with the actual video preview at `x=0…1080, y=184…2104`: a 1080 × 1920 frame. The mask is scaled uniformly, and Android window offsets are accounted for when drawing. Density is used for controls and the manual vertical adjustment.
+The default reference is a 1080 × 2340 display with the actual video preview at `x=0…1080, y=184…2104`: a 1080 × 1920 frame. The mask scales uniformly to the physical panel width, keeping its 9:16 aspect ratio on shorter displays too. The drawing window extends across system bars and display cutouts. Density is used for controls and the manual vertical adjustment.
+
+Also verified on **Google Pixel 2 XL, Android 11 / API 30, Google Camera 8.2.204.362396359.12**, at 1440 × 2880 and 560 dpi, with video preview bounds `x=0…1440, y=152…2712`. The included profile uses −27 dp to align the mask vertically, within whole-dp rounding. If a manual adjustment already exists, **Reset** applies the new profile.
 
 Other devices, camera layouts, aspect ratios and display settings may require vertical adjustment, even when a nearby profile is suggested. The guide stays fixed to the physical display when Android rotates, preserving its scale and saved vertical alignment. It does not automatically locate the camera preview, calibrate its width/height or provide a separate landscape-video layout. Android or individual apps can also restrict overlays on protected screens.
 
@@ -214,6 +218,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb shell am instrument -w it.pistacchissimo.socialoverlay.test/it.pistacchissimo.socialoverlay.GuideRenderTest
 adb shell am instrument -w it.pistacchissimo.socialoverlay.test/it.pistacchissimo.socialoverlay.GuideRotationTest
+adb shell am instrument -w it.pistacchissimo.socialoverlay.test/it.pistacchissimo.socialoverlay.GuideViewportTest
 ```
 
 On Windows, use `.\gradlew.bat` instead of `./gradlew`.
@@ -223,6 +228,8 @@ The instrumentation test requires overlay permission and the reference **1080 ×
 Instrumentation can leave the already-enabled Accessibility service disconnected on the reference Samsung device. Reinstall the app APK and reopen Social Safe Area after the test to reconnect it before testing automatic following.
 
 The rotation test requires the reference display to be awake and unlocked. It compares mask pixels in physical panel coordinates at 0°, 90°, 180° and 270°, including a manual vertical offset, then restores the saved preferences and rotation policy.
+
+`GuideViewportTest` checks mask edge coverage and a full-display window on different panel sizes through all four rotations. On the Pixel described above, add `-e frame_top 152` before the component to also check the profile against the measured preview top.
 
 For a connected Samsung device with **Camera** selected and Accessibility enabled:
 

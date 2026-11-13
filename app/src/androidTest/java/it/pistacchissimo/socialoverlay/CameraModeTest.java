@@ -100,6 +100,34 @@ final class CameraModeTest {
                 }
             }
 
+            JSONObject google = DeviceProfiles.modeDetection(shipped, "Google", "Pixel 2 XL", 30,
+                    "com.google.android.GoogleCamera", "8.2.204.362396359.12");
+            check(google != null, "verified Google Camera profile exists");
+            JSONArray googleRules = google.getJSONArray("rules");
+            String[][] googleDescriptions = {
+                {"Avvia video", "Scatta foto"}, {"Start video", "Take photo"},
+                {"Démarrer la vidéo", "Prendre une photo"}, {"Iniciar vídeo", "Hacer una foto"},
+                {"Video starten", "Foto aufnehmen"}, {"Video", "Unsupported language"}
+            };
+            for (int language = 0; language < googleDescriptions.length; language++) {
+                for (int mode = 0; mode < 2; mode++) {
+                    node.setContentDescription(googleDescriptions[language][mode]);
+                    String found = "unknown";
+                    for (int i = 0; i < googleRules.length(); i++) {
+                        JSONObject googleRule = googleRules.getJSONObject(i);
+                        check(googleRule.getString("view_id").equals("com.google.android.GoogleCamera:id/shutter_button"),
+                                "Google rules only match the shutter control");
+                        if (CameraModeDetector.matches(node, googleRule, window)) {
+                            check(found.equals("unknown") || found.equals(googleRule.getString("mode")),
+                                    "Google language rules must not conflict");
+                            found = googleRule.getString("mode");
+                        }
+                    }
+                    check(found.equals(language == 5 ? "unknown" : mode == 0 ? "video" : "photo"),
+                            "Google language " + language + " mode " + mode);
+                }
+            }
+
             test.runOnMainSync(() -> {
                 MaskMode.setVideoOnly(context, true);
                 MaskMode.setGuideVisible(context, true);

@@ -31,7 +31,7 @@ function Read-CameraControls {
 function Select-Mode([string]$Label) {
     $tree = Read-CameraControls
     if ($cameraPackage -eq 'com.google.android.GoogleCamera') {
-        $node = $tree.SelectNodes('//node[@resource-id="com.google.android.GoogleCamera:id/mode_switcher"]/node') |
+        $node = $tree.SelectNodes('//node[@resource-id="com.google.android.GoogleCamera:id/mode_switcher"]//node') |
             Where-Object { $_.text -eq $Label } | Select-Object -First 1
     } else {
         $node = $tree.SelectNodes('//node') | Where-Object {
@@ -75,7 +75,7 @@ try {
     Start-Sleep -Milliseconds 800
     $tree = Read-CameraControls
     if ($cameraPackage -eq 'com.google.android.GoogleCamera') {
-        $original = $tree.SelectNodes('//node[@resource-id="com.google.android.GoogleCamera:id/mode_switcher"]/node') |
+        $original = $tree.SelectNodes('//node[@resource-id="com.google.android.GoogleCamera:id/mode_switcher"]//node') |
             Where-Object { $_.selected -eq 'true' } | Select-Object -First 1
         $originalMode = $original.text
     } else {
